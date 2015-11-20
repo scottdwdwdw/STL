@@ -2,41 +2,41 @@
 #define ALLOC_H
 
 /*
-*	Alloc ¸ºÔğ¶ÔÏó¹¹ÔìÇ°µÄÄÚ´æ·ÖÅä¡¢¶ÔÏóÎö¹¹ºóµÄÄÚ´æ»ØÊÕ
-*	allocate:     ÄÚ´æ·ÖÅä
-*	deallocate:   ÄÚ´æÊÍ·Å
+*	Alloc è´Ÿè´£å¯¹è±¡æ„é€ å‰çš„å†…å­˜åˆ†é…ã€å¯¹è±¡ææ„åçš„å†…å­˜å›æ”¶
+*	allocate:     å†…å­˜åˆ†é…
+*	deallocate:   å†…å­˜é‡Šæ”¾
 */
 
 
 
 #if 0
 #	include<new>
-#	define __THROW_BAD_ALLOC throw bad_alloc      //²»Å×³öbad_alloc
-#elif !defined(__THROW_BAD_ALLOC)
+#	define __THROW_BAD_ALLOC throw bad_alloc                                //ä¸æŠ›å‡ºbad_alloc
+#elif !defined(__THROW_BAD_ALLOC)    
 #	include<iostream>
-#	define __THROW_BAD_ALLOC std::cerr<<"out of memory"<<std::endl;exit(1); //Èç¹ûÓöµ½²»ÄÜ·ÖÅäÇÒÃ»ÓĞÖ¸¶¨´¦Àíº¯Êı
-																	    // µÄÇé¿ö£¬´òÓ¡ĞÅÏ¢²¢ÍË³ö
+#	define __THROW_BAD_ALLOC std::cerr<<"out of memory"<<std::endl;exit(1); //å¦‚æœé‡åˆ°ä¸èƒ½åˆ†é…ä¸”æ²¡æœ‰æŒ‡å®šå¤„ç†å‡½æ•°
+																	    // çš„æƒ…å†µï¼Œæ‰“å°ä¿¡æ¯å¹¶é€€å‡º
 #endif
 
 namespace MyCppSTL
 {
-	 //µÚÒ»¼¶ÅäÖÃÆ÷
+	 //ç¬¬ä¸€çº§é…ç½®å™¨
 	template<int inst>
 	class __malloc_alloc_template 
 	{
 	private:
 		/* oom: out of memory */
-		static void *oom_malloc(size_t);					//out of memory when malloc
-		static void *oom_realloc(void*, size_t);				//out of memory when reallocate
+		static void *oom_malloc(size_t);				//out of memory when malloc
+		static void *oom_realloc(void*, size_t);			//out of memory when reallocate
 		static void(*__malloc_alloc_oom_handler)();			//the handler of out of memory
 	public:
-		static inline void* allocate(size_t n);            //allocate memory
-		static inline void* reallocate(void*p, size_t n);   //reallocate memory
-		static inline void deallocate(void*p,size_t);				//free memory
-		static void(*set_malloc_handler(void(*)()))();	    //out of memory function
+		static inline void* allocate(size_t n);                         //allocate memory
+		static inline void* reallocate(void*p, size_t n);               //reallocate memory
+		static inline void deallocate(void*p,size_t);		        //free memory
+		static void(*set_malloc_handler(void(*)()))();	                //out of memory function
 	};
-
-	/*·ÖÅä¿Õ¼ä³ÉÔ±*/
+/*******************************************************************************************************/
+	/*åˆ†é…ç©ºé—´æˆå‘˜*/
 	template<int inst>
 	void* __malloc_alloc_template<inst>::allocate(size_t n)
 	{
@@ -45,7 +45,7 @@ namespace MyCppSTL
 		return result;
 	}
 	
-	/*ÔÙ·ÖÅä*/
+	/*å†åˆ†é…*/
 	template<int inst>
 	void* __malloc_alloc_template<inst>::reallocate(void*p, size_t n)
 	{
@@ -54,25 +54,25 @@ namespace MyCppSTL
 		return result;
 	}
 
-	/*ÊÍ·ÅÄÚ´æ*/
+	/*é‡Šæ”¾å†…å­˜*/
 	template<int inst>
 	void __malloc_alloc_template<inst>::deallocate(void*p, size_t n)
 	{
 		free(p);
 	}
 
-	/*Ö¸¶¨·ÖÅäÊ§°ÜÊ±µÄ´¦Àíº¯Êı*/
+	/*æŒ‡å®šåˆ†é…å¤±è´¥æ—¶çš„å¤„ç†å‡½æ•°*/
 	template<int inst>
 	void(*__malloc_alloc_template<inst>::set_malloc_handler(void(*f)()))()
 	{
 		void(*old)() = __malloc_alloc_oom_handler;
 		__malloc_alloc_oom_handler = f;
-		return (old);			//ÓÃold±£´æÖ®Ç°µÄ´¦Àí·½·¨£¬µ÷ÓÃ¸Ãº¯Êıºó£¬Êµ¼ÊÊ¹ÓÃµÄÊÇ__malloc_alloc_oom_handlerÖ¸¶¨µÄº¯Êı					
+		return (old);	//ç”¨oldä¿å­˜ä¹‹å‰çš„å¤„ç†æ–¹æ³•ï¼Œè°ƒç”¨è¯¥å‡½æ•°åï¼Œå®é™…ä½¿ç”¨çš„æ˜¯__malloc_alloc_oom_handleræŒ‡å®šçš„å‡½æ•°					
 	}
 
 	
 
-	/*out of memory ´¦Àíº¯Êı,º¯ÊıÖ¸ÕëÉèÎª0*/
+	/*out of memory å¤„ç†å‡½æ•°,å‡½æ•°æŒ‡é’ˆè®¾ä¸º0*/
 	template<int inst>
 	void(*__malloc_alloc_template<inst>::__malloc_alloc_oom_handler)() = 0;
 
@@ -82,15 +82,15 @@ namespace MyCppSTL
 	template<int inst>
 	void *__malloc_alloc_template<inst>::oom_malloc(size_t n)
 	{
-		void(*my_malloc_handler)();				//ÉùÃ÷Ò»¸ö´¦Àíº¯Êı
+		void(*my_malloc_handler)();				        //å£°æ˜ä¸€ä¸ªå¤„ç†å‡½æ•°
 		void*result;
-		for (;;)								//·´¸´·ÖÅä
+		for (;;)							//åå¤åˆ†é…
 		{
 			my_malloc_handler = __malloc_alloc_oom_handler;
 			if (0 == my_malloc_handler) { __THROW_BAD_ALLOC; }
-			(*my_malloc_handler)();             //µ÷ÓÃ´¦Àíº¯Êı
+			(*my_malloc_handler)();                                  //è°ƒç”¨å¤„ç†å‡½æ•°
 			result = malloc(n);
-			if (result)return(result);			//·ÖÅä³É¹¦·µ»Ø
+			if (result)return(result);			         //åˆ†é…æˆåŠŸè¿”å›
 		}
 	}
 
@@ -98,15 +98,15 @@ namespace MyCppSTL
 	template<int inst>
 	void *__malloc_alloc_template<inst>::oom_realloc(void*p, size_t n)
 	{
-		void(*my_malloc_handler)();				//ÉùÃ÷Ò»¸ö´¦Àíº¯Êı
+		void(*my_malloc_handler)();				          //å£°æ˜ä¸€ä¸ªå¤„ç†å‡½æ•°
 		void*result;
-		for (;;)								//·´¸´·ÖÅä
+		for (;;)							  //åå¤åˆ†é…
 		{
 			my_malloc_handler = __malloc_alloc_oom_handler;
 			if (0 == my_malloc_handler) { __THROW_BAD_ALLOC; }
-			(*my_malloc_handler)();             //µ÷ÓÃ´¦Àíº¯Êı
-			result = realloc(p, n);
-			if (result)return(result);			//·ÖÅä³É¹¦·µ»Ø
+			(*my_malloc_handler)();                                  //è°ƒç”¨å¤„ç†å‡½æ•°
+			result = realloc(p, n); 
+			if (result)return(result);			         //åˆ†é…æˆåŠŸè¿”å›
 		}
 	}
 
