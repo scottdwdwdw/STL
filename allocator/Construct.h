@@ -3,27 +3,27 @@
 
 //#include<traits_type>
 /*
-*	¶¨ÒåallocĞèÒªÊ¹ÓÃµÄconstructºÍdestroyº¯Êı
-*   construct£º¶ÔÏó¹¹Ôì
-*	destroy£º¶ÔÏóÎö¹¹
+*	å®šä¹‰allocéœ€è¦ä½¿ç”¨çš„constructå’Œdestroyå‡½æ•°
+*       constructï¼šå¯¹è±¡æ„é€ 
+*	destroyï¼šå¯¹è±¡ææ„
 */
 
 #include<new.h>
 
 namespace MyCppSTL
 {
-	/*construct ¶ÔÏó¹¹Ôì*/
-	/*ÒªÇóT2µ½T1µÄÀàĞÍÊÇ¿ÉÒÔ×ª»»µÄ*/
+	/*construct å¯¹è±¡æ„é€ */
+	/*è¦æ±‚T2åˆ°T1çš„ç±»å‹æ˜¯å¯ä»¥è½¬æ¢çš„*/
 	template<class T1,class T2>
 	inline void construct(T1*p,const T2& value)
 	{
-		new(p)T1(value);      //µ÷ÓÃÕ¼Î»new,ÔÚÎ»ÖÃp´¦¹¹Ôì²ÎÊıvalue
+		new(p)T1(value);            //è°ƒç”¨å ä½new,åœ¨ä½ç½®på¤„æ„é€ å‚æ•°value
 	}
-	/*destroy ¶ÔÏóÏú»Ù*/
+	/*destroy å¯¹è±¡é”€æ¯*/
 	template<class T>
 	inline void destroy(T*p)
 	{
-		p->~T();		   //Ö±½Óµ÷ÓÃÀàĞÍTµÄÎö¹¹º¯Êı
+		p->~T();		   //ç›´æ¥è°ƒç”¨ç±»å‹Tçš„ææ„å‡½æ•°
 	}
 
 
