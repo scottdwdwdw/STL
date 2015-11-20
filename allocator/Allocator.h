@@ -30,7 +30,7 @@ namespace MyCppSTL
 		}
 		static void deallocate(T*p)
 		{
-			if (n != 0) { Alloc::deallocate(p,sizeof(T)); }
+			 Alloc::deallocate(p,sizeof(T)); 
 		}
 		/*对象的构造与析构*/
 		static void construct(T*p,const T&n)
