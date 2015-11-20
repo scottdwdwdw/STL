@@ -1,5 +1,8 @@
-# STL_implement
-STL_Study with c++11
+#STL_implement
+------
+环境：vs2015 <br>
 
-编译环境：VS2015
+--------------
+
+1.allocator的实现
 
