@@ -8,7 +8,7 @@
 *	destroy：对象析构
 */
 
-#include<new.h>
+#include<new>
 
 namespace MyCppSTL
 {
