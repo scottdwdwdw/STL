@@ -9,6 +9,8 @@
 */
 
 #include<new>
+#include<type_traits>
+
 
 namespace MyCppSTL
 {
@@ -25,6 +27,30 @@ namespace MyCppSTL
 	{
 		p->~T();		   //直接调用类型T的析构函数
 	}
+
+	
+	template<class Forwarditerator>
+	inline void destroy(Forwarditerator first, Forwarditerator last)
+	{
+		//__destroy(first,last,)
+	}
+	
+	/*
+	template<class ForwardIterator,class T>
+	inline void __destroy(ForwardIterator first, ForwardIterator last, T*)
+	{
+		//typedef typename __type_traits<T>::has_trivial_destructor trivial_destructor;
+
+	}
+	*/
+
+	//特例化版本
+	template<>
+	inline void destroy(char*, char*) {}
+	template<>
+	inline void destroy(int*, int*) {}
+	template<>
+	inline void destroy(double*, double*) {}
 
 
 

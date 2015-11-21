@@ -8,10 +8,19 @@
 *  分配器接口，包装第一二级配置器，提供标准接口
 */
 
+
+
+#ifdef __USE_MALLOC
+typedef MyCppSTL::malloc_alloc alloc;
+# else
+typedef MyCppSTL::default_alloc alloc;
+#endif
+
+
 namespace MyCppSTL 
 {
 
-	template<class T,class Alloc=malloc_alloc>
+	template<class T,class Alloc=alloc>
 	class allocator
 	{
 	public:
