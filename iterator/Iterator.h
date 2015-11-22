@@ -16,30 +16,30 @@ namespace MyCppSTL
 	template<class Iterator>
 	struct iterator_traits
 	{
-		typedef typename Iterator::value_type 			value_type;  				//解引用而获得的值类型
-		typedef typename Iterator::difference_type 		difference_type;			//迭代器之差
-		typedef typename Iterator::pointer 				pointer;					//指针类型
-		typedef typename Iterator::reference 			reference;					//引用类型
-		typedef typename Iterator::iterator_category 	iterator_category;			//迭代器类型，指明是input_iterator、output_iterator...	
+		typedef typename Iterator::value_type 			value_type;  		//解引用而获得的值类型
+		typedef typename Iterator::difference_type 		difference_type;	//迭代器之差
+		typedef typename Iterator::pointer 			pointer;		//指针类型
+		typedef typename Iterator::reference 			reference;		//引用类型
+		typedef typename Iterator::iterator_category 		iterator_category;	//迭代器类型，指明是input_iterator、output_iterator...	
 	};
 	//为T*,const T* 提供特例化版本
 	template<class Iterator>
 	struct iterator_traits<Iterator*>
 	{
-		typedef Iterator 						value_type;  				//解引用而获得的值类型
-		typedef ptrdiff_t 						difference_type;			//迭代器之差
-		typedef Iterator*	 					pointer;					//指针类型
-		typedef Iterator&	  					reference;					//引用类型
-		typedef random_access_iterator_tag	 	iterator_category;			//迭代器类型，内置指针是随机存取的	
+		typedef Iterator 				value_type;  		//解引用而获得的值类型
+		typedef ptrdiff_t 				difference_type;	//迭代器之差
+		typedef Iterator*	 			pointer;		//指针类型
+		typedef Iterator&	  			reference;		//引用类型
+		typedef random_access_iterator_tag	 	iterator_category;	//迭代器类型，内置指针是随机存取的	
 	};
 	template<class Iterator>
 	struct iterator_traits<const Iterator*>
 	{
-		typedef Iterator 						value_type;  				//解引用而获得的值类型
-		typedef ptrdiff_t 						difference_type;			//迭代器之差
-		typedef Iterator*	 					pointer;					//指针类型
-		typedef Iterator&	  					reference;					//引用类型
-		typedef random_access_iterator_tag	 	iterator_category;			//迭代器类型，内置指针是随机存取的	
+		typedef Iterator 				value_type;  		//解引用而获得的值类型
+		typedef ptrdiff_t 				difference_type;	//迭代器之差
+		typedef Iterator*	 			pointer;		//指针类型
+		typedef Iterator&	  			reference;		//引用类型
+		typedef random_access_iterator_tag	 	iterator_category;	//迭代器类型，内置指针是随机存取的	
 	};
 	
 	/*当我们自己定义自己的类的迭代器的时候可以从这个类继承而来，这样做是为了符合SGI规范*/
@@ -47,7 +47,7 @@ namespace MyCppSTL
 	struct iterator
 	{
 		typedef Category 	iterator_category;
-		typedef T		 	value_type;
+		typedef T		value_type;
 		typedef Distance 	difference_type;
 		typedef Pointer	 	pointerl;
 		typedef Reference 	reference;
