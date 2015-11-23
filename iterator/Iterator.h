@@ -57,7 +57,7 @@ namespace MyCppSTL
 
 	/*******************advance函数****************/
 	template<class InputIt,class Distance>
-	inline void __advance(InputIt&it,Distance n,input_iterator_tag)
+	inline void __advance(InputIt&it,Distance n, MyCppSTL::input_iterator_tag)
 	{
 		while(n--)++it;
 	}
@@ -71,7 +71,7 @@ namespace MyCppSTL
 	}
 	*/
 	template<class InputIt,class Distance>
-	inline void __advance(InputIt&it,Distance n,bidirectional_iterator_tag)
+	inline void __advance(InputIt&it,Distance n, MyCppSTL::bidirectional_iterator_tag)
 	{
 		if(n>0)
 		{
@@ -84,15 +84,24 @@ namespace MyCppSTL
 	}
 	
 	template<class InputIt,class Distance>
-	inline void __advance(InputIt&it,Distance n,random_access_iterator_tag)
+	inline void __advance(InputIt&it,Distance n, MyCppSTL::random_access_iterator_tag)
 	{
 		it+=n;
 	}
-	
+
+	/*
+	template<class InputIt>
+	inline typename iterator_traits<InputIt>::iterator_category
+		iterator_category(const InputIt&)
+	{
+		typedef typename iterator_traits<InputIt>::iterator_category category;
+		return(category());
+	}
+	*/
 	template<class InputIt,class Distance>
 	inline void advance(InputIt&it,Distance n)
 	{
-		__advance(it,n,iterator_traits<InputIt>::iterator_category());	//根据不同iterator_category，调用不同的函数
+		__advance(it,n, iterator_traits<InputIt>::iterator_category());	//根据不同iterator_category，调用不同的函数
 	}
 	
 	/******************distance函数***************************/
