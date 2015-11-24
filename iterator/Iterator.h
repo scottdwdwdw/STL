@@ -16,30 +16,30 @@ namespace MyCppSTL
 	template<class Iterator>
 	struct iterator_traits
 	{
-		typedef typename Iterator::value_type 			value_type;  		//解引用而获得的值类型
-		typedef typename Iterator::difference_type 		difference_type;	//迭代器之差
-		typedef typename Iterator::pointer 			pointer;		//指针类型
-		typedef typename Iterator::reference 			reference;		//引用类型
-		typedef typename Iterator::iterator_category 		iterator_category;	//迭代器类型，指明是input_iterator、output_iterator...	
+		typedef typename Iterator::value_type 			value_type;  				//解引用而获得的值类型
+		typedef typename Iterator::difference_type 		difference_type;			//迭代器之差
+		typedef typename Iterator::pointer 				pointer;					//指针类型
+		typedef typename Iterator::reference 			reference;					//引用类型
+		typedef typename Iterator::iterator_category 	iterator_category;			//迭代器类型，指明是input_iterator、output_iterator...	
 	};
 	//为T*,const T* 提供特例化版本
 	template<class Iterator>
 	struct iterator_traits<Iterator*>
 	{
-		typedef Iterator 				value_type;  		//解引用而获得的值类型
-		typedef ptrdiff_t 				difference_type;	//迭代器之差
-		typedef Iterator*	 			pointer;		//指针类型
-		typedef Iterator&	  			reference;		//引用类型
-		typedef random_access_iterator_tag	 	iterator_category;	//迭代器类型，内置指针是随机存取的	
+		typedef Iterator 						value_type;  				//解引用而获得的值类型
+		typedef ptrdiff_t 						difference_type;			//迭代器之差
+		typedef Iterator*	 					pointer;					//指针类型
+		typedef Iterator&	  					reference;					//引用类型
+		typedef random_access_iterator_tag	 	iterator_category;			//迭代器类型，内置指针是随机存取的	
 	};
 	template<class Iterator>
 	struct iterator_traits<const Iterator*>
 	{
-		typedef Iterator 				value_type;  		//解引用而获得的值类型
-		typedef ptrdiff_t 				difference_type;	//迭代器之差
-		typedef Iterator*	 			pointer;		//指针类型
-		typedef Iterator&	  			reference;		//引用类型
-		typedef random_access_iterator_tag	 	iterator_category;	//迭代器类型，内置指针是随机存取的	
+		typedef Iterator 						value_type;  				//解引用而获得的值类型
+		typedef ptrdiff_t 						difference_type;			//迭代器之差
+		typedef Iterator*	 					pointer;					//指针类型
+		typedef Iterator&	  					reference;					//引用类型
+		typedef random_access_iterator_tag	 	iterator_category;			//迭代器类型，内置指针是随机存取的	
 	};
 	
 	/*当我们自己定义自己的类的迭代器的时候可以从这个类继承而来，这样做是为了符合SGI规范*/
@@ -47,9 +47,9 @@ namespace MyCppSTL
 	struct iterator
 	{
 		typedef Category 	iterator_category;
-		typedef T		value_type;
+		typedef T		 	value_type;
 		typedef Distance 	difference_type;
-		typedef Pointer	 	pointerl;
+		typedef Pointer	 	pointer;
 		typedef Reference 	reference;
 	};
 	
@@ -201,7 +201,138 @@ namespace MyCppSTL
 	{
 		return MyCppSTL::end(c);
 	}
-	
+
+
+	/*****************array的迭代器**********************/
+
+	//非常量的
+	template<class T, std::size_t N>
+	struct array_iterator :public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag, T>
+	{
+		//内嵌型别的定义
+		typedef MyCppSTL::random_access_iterator_tag	iterator_bag;
+		typedef T										value_type;
+		typedef T* 										pointer;
+		//typedef const T*								const_pointer;
+		typedef T&										reference;
+		//typedef const T&								const_reference;
+		typedef std::ptrdiff_t							difference_type;
+		typedef std::size_t								size_type;
+		
+		//size_type	_size;			//大小
+	public:
+		pointer		_ptr;			//指针
+		//构造函数
+		array_iterator():_ptr(0){}			//默认构造函数
+	    explicit array_iterator(pointer p):_ptr(p)
+		{
+		}
+		//操作
+		reference operator*() 
+		{ 
+			return *_ptr;
+		}
+		array_iterator<T, N>&operator++()   //前置++
+		{					
+			//++*this;
+			++_ptr;    //增加_ptr ++_ptr
+			return *this;
+		}
+		array_iterator<T, N>operator++(int) //后置++
+		{
+			auto tmp = *this;    //返回量
+			++*this;
+			return tmp;
+		}
+		array_iterator<T, N>operator+(difference_type _off) //+
+		{
+			auto tmp = *this;
+			tmp += _off;      //
+			return tmp;
+
+		}
+
+		array_iterator<T, N>&operator--()//前置--
+		{
+			--_ptr;				//未做边界检查
+			return *this;
+		}
+		array_iterator<T, N>operator--(int)//后置--
+		{
+			auto tmp = *this;
+			--*this;
+			return tmp;
+
+		}
+		array_iterator<T, N>&operator-=(difference_type _off)//-=
+		{
+			_ptr -= _off;
+			return *this;
+		}
+		array_iterator<T, N>operator-(difference_type _off)//-
+		{
+			auto tmp = *this;
+			tmp -= _off;
+			return tmp;
+		}
+
+		array_iterator<T, N>&operator+=(difference_type _off)//+=
+		{
+			_ptr+=_off;
+			return *this;
+		}
+		
+
+		reference operator[](size_type _pos)//[]运算
+		{
+			return (_ptr[_pos]);
+		}
+
+		
+		//比较运算
+		bool operator==(const array_iterator<T, N>&rhs) //==
+		{
+			return (_ptr == rhs._ptr);
+		}
+		bool operator!=(const array_iterator<T, N>&rhs)//!=
+		{
+			return (!(*this == rhs));
+		}
+		bool operator<(const array_iterator<T, N>&rhs)//<
+		{
+			return (_ptr < rhs._ptr);
+		}
+		bool operator>(const array_iterator<T, N>&rhs)//>
+		{
+			return (_ptr>rhs._ptr);
+		}
+		bool operator>=(const array_iterator<T, N>&rhs)//>=
+		{
+			return (!(*this < rhs));
+		}
+		bool operator<=(const array_iterator<T, N>&rhs)//>=
+		{
+			return (!(*this > rhs));
+		}
+
+
+	};
+
+	//array 迭代器，常量版本
+	//非常量的
+	template<class T, std::size_t N>
+	struct array_const_iterator 
+		:public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag, 
+									const T,
+									std::ptrdiff_t,
+									const T*,
+									const T&>
+	{
+
+
+	};
+	//array迭代器，reserve版本
+
 	
 	
 }
