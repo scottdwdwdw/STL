@@ -19,6 +19,8 @@ namespace MyCppSTL
 		typedef std::ptrdiff_t							difference_type;
 		typedef std::size_t								size_type;
 		typedef MyCppSTL::array_iterator<T,N>			iterator;		//迭代器类型
+		typedef MyCppSTL::array_const_iterator<T, N>	const_iterator; //常量版本
+		typedef MyCppSTL::reserve_const_iterator<T, N>	reserve_const_iterator;
 		//const_iterator
 		// 
 		//构造函数
@@ -57,13 +59,20 @@ namespace MyCppSTL
 		{
 			
 		}
+		void swap(Array<T, N>&rhs)//交换的是容器类容，而不是指针或引用
+		{
+			//using std::swap;
+			std::swap(*this, rhs);
+
+		}
 		//迭代器操作
 		iterator begin() { return iterator(_array); }
-		const T*begin() const { return _array;  }
-		const T*cbegin() const { return _array; }
+		const_iterator  begin() const { return const_iterator(_array);  }
+		const_iterator cbegin() const { return const_iterator(_array); }
 		iterator end() { return iterator(_array + N); }
-		const T*end()const { return _array + N; }
-		const T*cend()const { return _array + N; }
+		const_iterator end()const { return const_iterator(_array + N); }
+		const_iterator cend()const { return const_iterator(_array + N); }
+		reserve_const_iterator rbegin() { return reserve_const_iterator(_array + N - 1); }
 
 		T _array[N];
 	private:

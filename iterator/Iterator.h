@@ -205,9 +205,108 @@ namespace MyCppSTL
 
 	/*****************array的迭代器**********************/
 
+	//array 迭代器，常量版本
 	//非常量的
 	template<class T, std::size_t N>
-	struct array_iterator :public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag, T>
+	struct array_const_iterator
+		:public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag,
+		const T,
+		std::ptrdiff_t,
+		const T*,
+		const T&>
+	{
+	public:
+		typedef array_const_iterator<T, N>				MyIterator;
+		typedef MyCppSTL::random_access_iterator_tag	iterator_tag;
+		typedef const T									value_type;
+		typedef const T*								pointer;
+		typedef const T&								reference;
+		typedef std::size_t								size_type;
+		typedef std::ptrdiff_t							difference_type;
+		pointer		_ptr_c;//成员
+						 //构造函数
+		array_const_iterator() :_ptr_c(0) {};	//默认构造函数
+		explicit array_const_iterator(pointer p) :_ptr_c(p) {};
+
+		//操作
+		reference operator*() const { return *_ptr_c; }   //解引用
+		reference operator[](size_type pos) const { return _ptr_c[pos]; }//下标操作
+		//算术运算符
+		MyIterator&operator++()  //前置++
+		{
+			++_ptr_c;
+			return *this;
+		}
+		MyIterator operator++(int)  //后置++
+		{
+			MyIterator tmp = *this;
+			++*this;
+			return tmp;  //将该临时变量拷贝到调用点的对象中
+		}
+		MyIterator&operator+=(difference_type pos)
+		{
+			_ptr += pos;
+			return *this; 
+		}
+		MyIterator operator+(difference_type pos) const//加法操作
+		{
+			return MyIterator(_ptr_c + pos);
+		}
+		MyIterator&operator--()  //前置--
+		{
+			--_ptr_c;
+			return *this;
+		}
+		MyIterator operator--(int)  //后置--
+		{
+			MyIterator tmp = *this;
+			--*this;
+			return tmp;
+		}
+		MyIterator& operator-=(difference_type pos)//-=
+		{
+			_ptr_c -= pos;
+			return *this;
+		}
+		MyIterator operator-(difference_type pos) const
+		{
+			return MyIterator(_ptr_c - pos);
+		}
+		difference_type operator-(const MyIterator&rhs) const
+		{
+			return (_ptr_c - rhs._ptr_c);
+		}
+		//关系运算符
+		bool operator==(const MyIterator&rhs) const
+		{
+			return (_ptr_c == rhs._ptr_c);
+		}
+		bool operator!=(const MyIterator&rhs) const
+		{
+			return (!(*this == rhs));
+		}
+		bool operator<(const MyIterator&rhs) const
+		{
+			return (_ptr_c < rhs._ptr_c);
+		}
+		bool operator>(const MyIterator&rhs) const
+		{
+			return (_ptr_c > rhs._ptr_c);
+		}
+		bool operator>=(const MyIterator&rhs) const
+		{
+			return (!(*this<rhs));
+		}
+		bool operator<=(const MyIterator&rhs) const
+		{
+			return (!(*this>rhs));
+		}
+};
+
+
+	//非常量的
+	template<class T, std::size_t N>
+	struct array_iterator :public array_const_iterator<T,N>
 	{
 		//内嵌型别的定义
 		typedef MyCppSTL::random_access_iterator_tag	iterator_bag;
@@ -223,8 +322,8 @@ namespace MyCppSTL
 	public:
 		pointer		_ptr;			//指针
 		//构造函数
-		array_iterator():_ptr(0){}			//默认构造函数
-	    explicit array_iterator(pointer p):_ptr(p)
+		array_iterator(){}			//默认构造函数
+	    explicit array_iterator(pointer p):array_const_iterator<T, N>(p),_ptr(p)
 		{
 		}
 		//操作
@@ -244,7 +343,7 @@ namespace MyCppSTL
 			++*this;
 			return tmp;
 		}
-		array_iterator<T, N>operator+(difference_type _off) //+
+		array_iterator<T, N>operator+(difference_type _off) const//+
 		{
 			auto tmp = *this;
 			tmp += _off;      //
@@ -269,7 +368,7 @@ namespace MyCppSTL
 			_ptr -= _off;
 			return *this;
 		}
-		array_iterator<T, N>operator-(difference_type _off)//-
+		array_iterator<T, N>operator-(difference_type _off) const//-
 		{
 			auto tmp = *this;
 			tmp -= _off;
@@ -290,49 +389,78 @@ namespace MyCppSTL
 
 		
 		//比较运算
-		bool operator==(const array_iterator<T, N>&rhs) //==
+	
+		bool operator==(const array_iterator<T, N>&rhs)const //==
 		{
 			return (_ptr == rhs._ptr);
 		}
-		bool operator!=(const array_iterator<T, N>&rhs)//!=
+		bool operator!=(const array_iterator<T, N>&rhs)const//!=
 		{
 			return (!(*this == rhs));
 		}
-		bool operator<(const array_iterator<T, N>&rhs)//<
+		bool operator<(const array_iterator<T, N>&rhs)const//<
 		{
 			return (_ptr < rhs._ptr);
 		}
-		bool operator>(const array_iterator<T, N>&rhs)//>
+		bool operator>(const array_iterator<T, N>&rhs)const//>
 		{
 			return (_ptr>rhs._ptr);
 		}
-		bool operator>=(const array_iterator<T, N>&rhs)//>=
+		bool operator>=(const array_iterator<T, N>&rhs)const//>=
 		{
 			return (!(*this < rhs));
 		}
-		bool operator<=(const array_iterator<T, N>&rhs)//>=
+		bool operator<=(const array_iterator<T, N>&rhs)const//>=
 		{
 			return (!(*this > rhs));
 		}
-
-
-	};
-
-	//array 迭代器，常量版本
-	//非常量的
-	template<class T, std::size_t N>
-	struct array_const_iterator 
-		:public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag, 
-									const T,
-									std::ptrdiff_t,
-									const T*,
-									const T&>
-	{
-
+	
 
 	};
+
 	//array迭代器，reserve版本
+	template<class T,std::size_t N>
+	struct reserve_const_iterator :public MyCppSTL::iterator<MyCppSTL::random_access_iterator_tag,
+		const T,
+		std::ptrdiff_t,
+		const T*,
+		const T&>
+	{
+		typedef reserve_const_iterator<T, N>	MyIterator;
+		typedef MyCppSTL::random_access_iterator_tag iterator_bag;
+		typedef const T value_type;
+		typedef const T& reference;
+		typedef const T* pointer;
+		typedef std::size_t size_value;
+		typedef std::ptrdiff_t difference_type;
 
+		//成员
+		pointer _ptr_r;	
+		//构造函数
+		reserve_const_iterator() :_ptr_r(0) {}
+		explicit reserve_const_iterator(pointer p) :_ptr_r(p) {}
+		//操作
+		reference operator*()const    //解引用
+		{
+			return (*_ptr_r);
+		}
+		reference operator[](const size_value&pos)const    //下标操作
+		{
+			return (_ptr_r[pos]);
+		}
+		MyIterator& operator++()   //前置递增
+		{
+			++_ptr_r;
+			return *this;
+		}
+		MyIterator operator++(int)//后置递增
+		{
+			MyIterator tmp = *this;
+			++*this;
+			return tmp;
+		}
+
+	};
 	
 	
 }
