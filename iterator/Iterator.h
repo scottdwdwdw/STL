@@ -450,7 +450,7 @@ namespace MyCppSTL
 		}
 		MyIterator& operator++()   //前置递增
 		{
-			++_ptr_r;
+			--_ptr_r;     //向前移动
 			return *this;
 		}
 		MyIterator operator++(int)//后置递增
@@ -459,6 +459,21 @@ namespace MyCppSTL
 			++*this;
 			return tmp;
 		}
+
+		MyIterator &operator+=(difference_type n) const
+		{
+			_ptr_r -= n;
+			return *this;
+		}
+		MyIterator operator+(difference_type n) const
+		{
+			MyIterator tmp = *this;
+			tmp._ptr_r -= n;
+			return tmp;
+		}
+
+
+
 
 	};
 	

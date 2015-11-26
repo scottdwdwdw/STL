@@ -2,6 +2,7 @@
 #define ARRAY_H
 
 #include "Iterator.h"
+#include "Algorithm.h"
 
 namespace MyCppSTL
 {
@@ -57,12 +58,12 @@ namespace MyCppSTL
 		//操作
 		void fill(const T&val)
 		{
-			
+			MyCppSTL::fill((*this).begin(), (*this).end(), val);//对于非字符型的类型，使用for循环来赋值。
 		}
 		void swap(Array<T, N>&rhs)//交换的是容器类容，而不是指针或引用
 		{
-			//using std::swap;
-			std::swap(*this, rhs);
+			//using std::swap;  
+			MyCppSTL::swap(*this, rhs);
 
 		}
 		//迭代器操作
@@ -72,7 +73,7 @@ namespace MyCppSTL
 		iterator end() { return iterator(_array + N); }
 		const_iterator end()const { return const_iterator(_array + N); }
 		const_iterator cend()const { return const_iterator(_array + N); }
-		reserve_const_iterator rbegin() { return reserve_const_iterator(_array + N - 1); }
+		reserve_const_iterator rbegin() { return reserve_const_iterator(_array + N - 1); } //reserve版本
 
 		T _array[N];
 	private:
@@ -81,6 +82,45 @@ namespace MyCppSTL
 			if (pos > N)throw std::out_of_range("out of range");
 		}
 	};
+	//非成员函数
+	//比较操作符
+	template<class T,std::size_t N>
+	bool operator==(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{
+		return (MyCppSTL::equal(lhs.begin(), lhs.end(), rhs.begin()));
+	}
+	template<class T,std::size_t N>
+	bool operator!=(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{
+		return (!(lhs == rhs));
+	}
+	template<class T,std::size_t N>
+	bool operator<(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{
+		return MyCppSTL::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+	}
+	template<class T, std::size_t N>
+	bool operator>(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{
+		return (rhs < lhs);
+	}
+
+	template<class T, std::size_t N>
+	bool operator<=(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{				//lhs<=rhs
+		return !(lhs>rhs);
+	}
+	template<class T, std::size_t N>
+	bool operator>=(const Array<T, N>&lhs, const Array<T, N>&rhs)
+	{				//lhs<=rhs
+		return !(lhs<rhs);
+	}
+	template<std::size_t I,class T,std::size_t N>
+	T&get(const Array<T, N>&rhs)
+	{
+		return const_cast<T&>(rhs[I]);
+	}
+
 
 
 	
