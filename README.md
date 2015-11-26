@@ -34,6 +34,7 @@
 >* operation: fill(),swap()<br>
 >* non-member function：operator==,operator!=,operator<,operator<=,operator>,operator>=,get<>()<br>
 
-4.[Algorithm](https://github.com/scottdwdwdw/STL_implement/blob/master/Algorithm/Algorithm.h)
-实现：<br>
+4.[Algorithm](https://github.com/scottdwdwdw/STL_implement/blob/master/Algorithm/Algorithm.h)<br>
+实现:
+<br>
 >* swap(),iter_swap(),fill(),fill_n(),equal(),lexicographical_compare()
