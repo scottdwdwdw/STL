@@ -24,13 +24,14 @@
 >* 增加array_iterator:<br>
           array_const_iterator(未完成->运算符)<br>
           array_iterator(未完成->运算符)<br>
-          reserve_const_iterator(未完成)<br>
-          reserve_iterator(未完成)<br>
+         
 
 3.[Array类](https://github.com/scottdwdwdw/STL_implement/tree/master/array)<br>
 实现：<br>
->* Element access: at()  operator[]  front() back() <br>
->* Iterators:begin   cbegin end  cend  <br>
->* Capacity: empty(),size() max_size()
+>* Element access: at() , operator[] , front() ,back() <br>
+>* Iterators:begin   cbegin, end , cend  <br>
+>* Capacity: empty(),size(), max_size()<br>
+>* operation: fill(),swap()<br>
+>* non-member function：operator==,operator!=,operator<,operator<=,operator>,operator>=,get<>()<br>
 
 
