@@ -1,6 +1,8 @@
 #ifndef ITERATOR_H
 #define ITERATOR_H
 
+
+#include"Allocator.h"
 /*
 *  未通过标准库容器测试
 *  通过内置型指针的测试
@@ -476,7 +478,132 @@ namespace MyCppSTL
 
 
 	};
+
+
+	//**************vector的迭代器*******************************
+	//常量版本
+	//vector_const_iterator,迭代器指向的对象的值不能改变，迭代器的值可以改变
+	template<class T,class alloc=allocator<T>>
+	class vector_const_iterator :public iterator<random_access_iterator_tag, T>
+	{
+	public:
+		//内嵌型别
+		typedef vector_const_iterator<T>	   _MyIter;
+		typedef const T value;
+		typedef const T* pointer;
+		typedef const T& reference;
+		typedef std::ptrdiff_t	difference_type;
+		typedef std::size_t		size_type;
+	public:
+		//成员
+		pointer _ptr;
 	
+	public:
+		//构造函数
+		vector_const_iterator() :_ptr(0){}//默认构造函数
+		vector_const_iterator(pointer ptr) :_ptr(ptr)//构造函数
+		{
+		}
+
+		//解引用操作
+		reference operator*() const
+		{
+			return (*_ptr);
+		}
+		//下标运算
+		reference operator[](const size_type&pos)const
+		{
+			return _ptr[pos];
+		}
+		//前置递增
+		_MyIter&operator++()
+		{
+			++_ptr;
+			return *this;
+		}
+		//后置递增
+		_MyIter operator++(int)
+		{
+			_MyIter tmp = *this;
+			++*this;
+			return tmp;
+		}
+		//复合赋值
+		_MyIter&operator+=(const difference_type&pos)
+		{
+			_ptr += pos;
+			return *this;
+		}
+		//加
+		_MyIter operator+(const difference_type&pos)
+		{
+			_MyIter tmp = *this;
+			tmp += pos;
+			return tmp;
+		}
+		//前置减
+		_MyIter&operator--()
+		{
+			--_ptr;
+			return *this;
+		}
+		//后置递减
+		_MyIter operator--(int)
+		{
+			_MyIter tmp = *this;
+			--*this;
+			return tmp;
+		}
+		//复合
+		_MyIter&operator-=(const difference_type&pos)
+		{
+			_ptr-= pos;
+			return *this;
+		}
+		//减
+		_MyIter operator-(const difference_type&pos)
+		{
+			_MyIter tmp = *this;
+			tmp -= pos;
+			return tmp;
+		}
+
+		//比较运算符
+		bool operator==(const _MyIter&rhs) const
+		{
+			return ((this->_ptr) == rhs._ptr);
+		}
+		bool operator!=(const _MyIter&rhs) const
+		{
+			return (!(*this == rhs));
+		}
+		bool operator<(const _MyIter&rhs) const
+		{
+			return ((this->_ptr) < rhs._ptr);
+		}
+		bool operator>(const _MyIter&rhs)const
+		{
+			return (this->_ptr>rhs._ptr);
+		}
+		bool operator>=(const _MyIter&rhs)const
+		{
+			return !(*this<rhs);
+		}
+		bool operator<=(const _MyIter&rhs)const
+		{
+			return !(*this>rhs);
+		}
+
+
+	};
+	
+	//vector_const_iterator的非成员函数
+	template<class T, class alloc = allocator<T>>
+	std::ptrdiff_t operator-(const vector_const_iterator<T>&lhs, const vector_const_iterator<T>&rhs)
+	{
+		return (lhs._ptr - rhs._ptr);
+	}
+
 	
 }
 #endif

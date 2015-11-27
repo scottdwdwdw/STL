@@ -29,7 +29,12 @@ namespace MyCppSTL
 	template<class InputIterator, class ForwardIterator>
 	inline ForwardIterator __uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator dest, MyCppSTL::__true_type)
 	{
-		return (std::copy(first, last, dest));
+		InputIterator i = first;
+		for (; i < last; ++i)
+		{
+			*(dest + (i - first)) = *i;
+		}
+		return dest;
 	}
 
 	//辅助函数，不是pod,调用construct完成copy
@@ -42,7 +47,7 @@ namespace MyCppSTL
 			construct(&*(dest + (i - first)), *i);
 		}
 
-		return first;
+		return dest;
 	}
 
 	//uninitialized_copy的特例化版本,针对，char*
