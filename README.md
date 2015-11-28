@@ -12,7 +12,7 @@
 >* 第二级配置器<br>
 >* construct<br>
 >* destroy<br>
->* destroy未完成接受两个迭代器版本，特例化版本<br>
+
 
 2.iterator的实现<br>
 [iterator](https://github.com/scottdwdwdw/STL_implement/tree/master/iterator)<br>
