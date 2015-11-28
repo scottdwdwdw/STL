@@ -494,7 +494,7 @@ namespace MyCppSTL
 		typedef const T& reference;
 		typedef std::ptrdiff_t	difference_type;
 		typedef std::size_t		size_type;
-	public:
+	protected:
 		//成员
 		pointer _ptr;
 	
@@ -594,16 +594,110 @@ namespace MyCppSTL
 			return !(*this>rhs);
 		}
 
+		//两个迭代器相减
+		difference_type operator-(const _MyIter&rhs)
+		{
+			return (_ptr - rhs._ptr);
+		}
+			
 
 	};
 	
 	//vector_const_iterator的非成员函数
+   /*
 	template<class T, class alloc = allocator<T>>
 	std::ptrdiff_t operator-(const vector_const_iterator<T>&lhs, const vector_const_iterator<T>&rhs)
 	{
 		return (lhs._ptr - rhs._ptr);
 	}
+	*/
+	//vectord的迭代器，非常量版本
+	template<class T,class alloc=allocator<T>>
+	class vector_iterator :public vector_const_iterator<T, alloc>
+	{
+		//内嵌型别定义
+	public:
+		typedef vector_iterator<T>	   _MyIter;
+		typedef vector_const_iterator<T> _MyBase;
+		typedef T value;
+		typedef T* pointer;
+		typedef T& reference;
+		typedef std::ptrdiff_t	difference_type;
+		typedef std::size_t		size_type;
+		
+		//构造函数
+		vector_iterator() = default;
+		vector_iterator(pointer ptr) :vector_const_iterator(ptr)
+		{
+			
+		}
+		//解引用
+		reference operator*()
+		{
+			return ((reference)**(_MyBase*)this); //调用基类的接引用操作符，得到的是const T&类型，然后再强制转换为T&,即完成要求
+		}
+		//下标操作
+		reference operator[](const size_type& pos)
+		{
+			return  ((reference)(*(_MyBase*)this)[pos]);
+		}
+		//前置递增
+		_MyIter& operator++()
+		{
+			++*(_MyBase*)this;
+			return *this;
+		}
+		//后置递增
+		_MyIter operator++(int)
+		{
+			auto tmp = *this;
+			++*this;
+			return tmp;
+		}
+		//复合赋值
+		_MyIter& operator+=(const difference_type &pos)
+		{
+			*(_MyBase*)this += pos;
+			return *this;
+		}
+		//加
+		_MyIter operator+(const difference_type &pos)
+		{
+			auto tmp = *this;
+			tmp += pos;
+			return pos;
+		}
+		//前置--
+		_MyIter&operator--()
+		{
+			--*(_MyBase*)this;
+			return *this;
+		}
+		//后置--
+		_MyIter operator--(int)
+		{
+			auto tmp = *this;
+			--*this;
+			return tmp;
+		}
+		//复合减
+		_MyIter& operator-=(const difference_type&pos)
+		{
+			*(_MyBase*)this -= pos;
+			return *this;
+		}
+		//减
+		_MyIter& operator-(const difference_type&pos)
+		{
+			auto tmp = *this;
+			tmp -= pos;
+			return tmp;
+		}
 
+		//逻辑操作使用基类的
+
+
+	};
 	
 }
 #endif
