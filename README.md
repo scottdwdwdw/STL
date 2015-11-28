@@ -24,6 +24,8 @@
 >* 增加array_iterator:<br>
           array_const_iterator(未完成->运算符)<br>
           array_iterator(未完成->运算符)<br>
+>* vector_const_iterator<br>
+>* vector_iterator<br>
          
 
 3.[Array类](https://github.com/scottdwdwdw/STL_implement/tree/master/array)<br>
@@ -38,3 +40,7 @@
 实现:
 <br>
 >* swap(),iter_swap(),fill(),fill_n(),equal(),lexicographical_compare()
+
+5.[Vector]()<br>
+实现：<br>
+>* (constructor)  、  (destructor)、 operator=(赋值构造)，Element access、Iterators、Capacity
