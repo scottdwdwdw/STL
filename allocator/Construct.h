@@ -32,16 +32,16 @@ namespace MyCppSTL
 	template<class Forwarditerator>
 	inline void destroy(Forwarditerator first, Forwarditerator last)
 	{
-		__destroy(first, last,MyCppSTL::iterator_traits<Forwarditerator>::value_type);
+		__destroy_aux(first, last,MyCppSTL::__type_traits<Forwarditerator>::is_POD_type());
 	}
 	
-	
+	/*
 	template<class ForwardIterator,class T>
 	inline void __destroy(ForwardIterator first, ForwardIterator last,T*)
 	{
 
 	}
-
+	*/
 	template<class ForwardIterator>
 	inline void __destroy_aux(ForwardIterator first, ForwardIterator last, MyCppSTL::__true_type)
 	{
