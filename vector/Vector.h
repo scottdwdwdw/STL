@@ -18,8 +18,7 @@ namespace MyCppSTL{
 	{
 	public:    //内嵌型别定义
 		typedef T									value_type;
-		typedef T*									pointer;
-		typedef const T*							const_pointer;
+		
 		typedef T&									reference;
 		typedef const T&							const_reference;
 		typedef std::size_t							size_type;
@@ -28,6 +27,8 @@ namespace MyCppSTL{
 		typedef MyCppSTL::vector_const_iterator<T, alloc> const_iterator;
 		typedef alloc								alloc_type;
 		typedef vector<T, alloc>					myVector;
+		typedef T*									pointer;
+		typedef const T*							const_pointer;
 	private:   //成员
 		pointer _first;    //容器头
 		pointer _last;	   //容器元素尾
@@ -156,6 +157,30 @@ namespace MyCppSTL{
 			return (_first == _last);
 		}
 		void reserve(size_type new_cap);
+
+		//对容器元素的添加，修改
+		void push_back(const T&value)
+		{
+			if (_last != _end_of_storage)//不需要重新分配空间，直接再尾部添加元素
+			{
+				construct(_last, value);
+				++_last;    //后移
+			}
+			else   //否则重新分配空间，并把旧的元素拷贝到新的空间中,再销毁旧空间
+			{
+				const size_type old_size = size();
+				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  //按照两倍的关系分配
+				pointer new_begin = alloc::allocate(new_size);      //重新分配空间
+				pointer cur = new_begin;
+				MyCppSTL::uninitialized_copy(_first, _last, cur);   //拷贝到新的空间中
+				free(_first, _last);              //销毁旧空间
+				_first = new_begin;				  //赋给新空间首地址
+				_last = _first + old_size + 1;    //新结束地址
+				construct(_last-1, value);        //添加元素
+				_end_of_storage = _first + new_size; 
+			}
+		}
+		//void push_back(T&&value);
 	private:
 		//辅助函数,分配空间并用指定值来初始化
 		void allocate_and_fill(size_type n, const T&x)
@@ -198,7 +223,7 @@ namespace MyCppSTL{
 		   {
 			   destroy(first, last);
 			   alloc_type::deallocate(_first, _end_of_storage - _first);
-		   }
+		  }
 	   }
 	   //辅助函数，边界检查
 	   void check(const size_type &pos)
