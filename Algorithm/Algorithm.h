@@ -57,6 +57,17 @@ namespace MyCppSTL
 		return dest + (last - first);
 	}
 
+	template<class InputIterator, class ForwardIterator>
+	inline ForwardIterator uninitialized_move(InputIterator first, InputIterator last, ForwardIterator dest)
+	{
+		InputIterator i = first;
+		for (; i<last; ++i)
+		{
+			construct(&*(dest + (i - first)), std::move(*i)); //使用移动的方法
+		}
+		return dest;
+	}
+
 
 	//uninitialized_fill()
 	//要求[first,last)要求是未初始化的内存
