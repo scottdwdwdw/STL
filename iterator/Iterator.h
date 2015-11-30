@@ -665,7 +665,7 @@ namespace MyCppSTL
 		{
 			auto tmp = *this;
 			tmp += pos;
-			return pos;
+			return tmp;
 		}
 		//前置--
 		_MyIter&operator--()
@@ -687,11 +687,17 @@ namespace MyCppSTL
 			return *this;
 		}
 		//减
-		_MyIter& operator-(const difference_type&pos)
+		_MyIter operator-(const difference_type&pos)
 		{
 			auto tmp = *this;
 			tmp -= pos;
 			return tmp;
+		}
+
+		//迭代器相减
+		difference_type operator-(const _MyIter&rhs)
+		{
+			return (_ptr - rhs._ptr);
 		}
 
 		//逻辑操作使用基类的
