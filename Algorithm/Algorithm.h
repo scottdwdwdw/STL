@@ -192,8 +192,16 @@ namespace MyCppSTL
 			else if (*first1 > *first2)return false;
 		}
 		//equal or one range is a prefix of another
-		return((first1 == last1) && (first1 != last1));
+		return((first1 == last1) && (first2 != last2));
 	}
+
+	/*
+	template<class BidirectionalIterator1,class BidirectionalIterator2>
+	inline BidirectionalIterator12 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
+		BidirectionalIterator2 result)
+	{
+		//考虑输出区间与输入区间重合的情况
+	}*/
 
 }
 
