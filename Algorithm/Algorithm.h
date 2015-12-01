@@ -11,6 +11,7 @@ namespace MyCppSTL
 	//uninitialized_   
 	//uninitialized_copy()
 	//要求目的地址是待初始化的一块内存，且容量至少有输入范围那么大
+	//返回的是递增后的迭代器
 	template<class InputIterator, class ForwardIterator>
 	ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator dest)
 	{
@@ -25,14 +26,15 @@ namespace MyCppSTL
 		return (__uninitialized_copy_aux(first, last, dest, MyCppSTL::__type_traits<value_type>::is_POD_type()));
 	}
 
-	//辅助函数，是pod,调用std的copy
+	//辅助函数，是pod,直接复制
 	template<class InputIterator, class ForwardIterator>
 	inline ForwardIterator __uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator dest, MyCppSTL::__true_type)
 	{
 		InputIterator i = first;
 		for (; i < last; ++i)
 		{
-			*(dest + (i - first)) = *i;
+			//*(dest + (i - first)) = *i;
+			*dest++ = *i;
 		}
 		return dest;
 	}
@@ -42,9 +44,10 @@ namespace MyCppSTL
 	inline ForwardIterator __uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator dest,MyCppSTL::__false_type)
 	{
 		InputIterator i = first;
-		for (; i<last; ++i)
+		for (; i<last; ++i,++dest)
 		{
-			construct(&*(dest + (i - first)), *i);
+			//construct(&*(dest + (i - first)), *i);
+			construct(&*(dest), *i);
 		}
 
 		return dest;
@@ -56,14 +59,14 @@ namespace MyCppSTL
 		std::memmove(dest, first, last - first);
 		return dest + (last - first);
 	}
-
+	//使用move语句
 	template<class InputIterator, class ForwardIterator>
 	inline ForwardIterator uninitialized_move(InputIterator first, InputIterator last, ForwardIterator dest)
 	{
 		InputIterator i = first;
-		for (; i<last; ++i)
+		for (; i<last; ++i,++dest)
 		{
-			construct(&*(dest + (i - first)), std::move(*i)); //使用移动的方法
+			construct(&*(dest), std::move(*i)); //使用移动的方法
 		}
 		return dest;
 	}
@@ -101,7 +104,7 @@ namespace MyCppSTL
 	}
 
 	//uninitialized_fill_n
-	//
+	//返回的是递增后的first
 	template<class InputIterator,class size, class T>
 	InputIterator uninitialized_fill_n(InputIterator first, size n, const T&val)
 	{
@@ -195,13 +198,9 @@ namespace MyCppSTL
 		return((first1 == last1) && (first2 != last2));
 	}
 
-	/*
-	template<class BidirectionalIterator1,class BidirectionalIterator2>
-	inline BidirectionalIterator12 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
-		BidirectionalIterator2 result)
-	{
-		//考虑输出区间与输入区间重合的情况
-	}*/
+
+	//拷贝操作
+
 
 }
 
