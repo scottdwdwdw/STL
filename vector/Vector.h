@@ -160,40 +160,23 @@ namespace MyCppSTL{
 		}
 		void reserve(size_type new_cap)//改变capacity,若new_cap小于当前cap,则不变
 		{
-			if (new_cap > capacity()) //重新分配空间，并把旧数据拷贝到新的地址
-			{
-				pointer new_begin= alloc::allocate(new_cap);
-				auto oldsize = size();
-				pointer cur = new_begin;
-				uninitialized_move(_first, _last, cur);
-				free(_first, _last);
-				_first = new_begin;
-				_last = _first + oldsize;
-				_end_of_storage = _first + new_cap;
-				
-			}
+			if (new_cap > capacity())reallocate_and_copy(new_cap);
 		}
 
 		//对容器元素的添加，修改
 		void push_back(const T&value)
 		{
-			if (_last != _end_of_storage)//不需要重新分配空间，直接再尾部添加元素
+			if (_last != _end_of_storage)
 			{
 				construct(_last, value);
-				++_last;    //后移
+				++_last; 
 			}
-			else   //否则重新分配空间，并把旧的元素拷贝到新的空间中,再销毁旧空间
+			else   //重新分配空间
 			{
-				const size_type old_size = size();
-				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  //按照两倍的关系分配
-				pointer new_begin = alloc::allocate(new_size);      //重新分配空间
-				pointer cur = new_begin;
-				MyCppSTL::uninitialized_copy(_first, _last, cur);   //拷贝到新的空间中
-				free(_first, _last);              //销毁旧空间
-				_first = new_begin;				  //赋给新空间首地址
-				_last = _first + old_size + 1;    //新结束地址
-				construct(_last - 1, value);        //添加元素
-				_end_of_storage = _first + new_size;
+				const size_type new_size = ((size() == 0) ? 1 : 2 * size()); 
+				reallocate_and_copy(new_size);
+				construct(_last, value);      
+				++_last;
 			}
 		}
 
@@ -207,12 +190,11 @@ namespace MyCppSTL{
 			}
 			else   //重新分配空间
 			{
-				//const size_type old_size = size();
-				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  //按照两倍的关系分配
-				reserve(new_size);
-				construct(_last, value);        //添加元素
+				const size_type new_size = ((size() == 0) ? 1 : 2 * size()); 
+				reallocate_and_copy(new_size);
+				construct(_last, std::move(value));     
 				++_last;
-				//_end_of_storage = _first + new_size;
+				
 			}
 		}
 
@@ -228,14 +210,10 @@ namespace MyCppSTL{
 
 		iterator erase(iterator pos)   //移除指定位置的元素
 		{
-			if (pos > end() || pos < begin())
-			{
-				throw std::out_of_range("out of range");
-			}
 			for (auto it = pos; it < end()-1; ++it)
 			{
 				*it = *(it + 1);
-			}
+			}						/////合成一个copy函数
 			destroy(_last - 1);
 			_last -= 1;
 			return pos;
@@ -261,14 +239,9 @@ namespace MyCppSTL{
 
 		void resize(size_type count, const T &value)
 		{
-			if (count < size())
-			{
-				erase(begin() + count, end());
-			}
-			else
-			{
-				insert(end(), count-size(), value);
-			}
+
+			count < size()?erase(begin() + count, end()) : insert(end(), count - size(), value);
+
 		}
 
 		void resize(size_type count)
@@ -276,19 +249,21 @@ namespace MyCppSTL{
 			resize(count, T());
 		}
 
+		void shrink_to_fit()
+		{
+			free(_last+1, _end_of_storage);
+			_end_of_storage = _last;
+		}
+
 		template< class... Args >
-		iterator emplace(const_iterator pos, Args&&... args) //pos之前直接构造元素
+		iterator emplace(iterator pos, Args&&... args) //pos之前直接构造元素
 		{
 			auto pos_ptr = _first + (pos - begin());
 			if ((size() + 1) <= capacity())//空间足够
 			{
-				
-				for (auto it =_last - 1; it >= pos_ptr; --it)
-				{
-					construct(it + 1, *it);
-				}
+				push_back(T());
+				reverse_copy_aux(end() - 2, pos, end() - 1);
 				construct(pos_ptr, std::forward<Args>(args)...);
-				++_last;
 				return iterator(pos_ptr);
 			}
 			else
@@ -296,14 +271,7 @@ namespace MyCppSTL{
 				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  //按照两倍的关系分配
 				auto count = pos_ptr - _first;
 				reserve(new_size);
-				pos_ptr = _first + count;
-				for (auto it = _last - 1; it >= pos_ptr; --it)
-				{
-					construct(it + 1, *it);
-				}
-				construct(pos_ptr, std::forward<Args>(args)...);
-				++_last;
-				return iterator(pos_ptr);
+				return emplace(begin() + count, std::forward<Args>(args)...);
 			}
 
 
@@ -319,27 +287,23 @@ namespace MyCppSTL{
 
 		iterator insert(iterator pos, const T&val)
 		{
-			/*首先判断增加了这个元素后会不会超出capacity*/
+			
 			if (pos > end())
 			{
 				throw std::out_of_range("out of range");
 			}
 			if ((size() + 1) <= capacity())
 			{
-				//先让用最有一个元素往后构造一个新的元素，然后其余的就单纯的移动
-				construct(_last, *(_last - 1));
-				++_last;
-				for (auto it = pos+1; it < _last - 1; ++it)
-				{
-					*it = *(it - 1);
-				}
+				//先用最后一个元素往后构造一个新的元素，然后其余的就单纯的移动
+				push_back(T());
+				reverse_copy_aux(end() - 2, pos, end() - 1);
 				*pos = val;
 				return pos;
 			}
 			else  //空间不够，需要重新分配空间
 			{
 				difference_type distance = pos - begin();
-				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  //按照两倍的关系分配
+				const size_type new_size = ((size() == 0) ? 1 : 2 * size());  
 				reserve(new_size);
 				auto new_pos = _first + distance;//恢复位置
 				insert(new_pos, val);  //递归调用
@@ -361,8 +325,13 @@ namespace MyCppSTL{
 		}
 		
 
-		//
-
+		void swap(vector& other)
+		{
+			using std::swap;
+			MyCppSTL::swap(_last, other._last);
+			MyCppSTL::swap(_first, other._first);
+			MyCppSTL::swap(_end_of_storage, other._end_of_storage);
+		}
 
 	private:
 		//辅助函数,分配空间并用指定值来初始化
@@ -374,15 +343,27 @@ namespace MyCppSTL{
 			_last = _first + n;
 			_end_of_storage = _last;
 		}
-		//辅助函数
-		
+
+		//辅助函数,分配空间，并将值拷贝到指定的地址
 	   template<class InputIterator>
 	   void allocate_and_copy(InputIterator first, InputIterator last)
 	   {
 		   _first = alloc::allocate(last-first);
 		   pointer cur = _first;
-		   uninitialized_copy(first, last, cur);
-		   _last = _end_of_storage = _first + (last-first);
+		   auto it =uninitialized_copy(first, last, cur);
+		   _last = _end_of_storage = it;
+	   }
+
+	   //辅助函数，重新分配空间并将原容器拷贝到新的地址上
+	   void reallocate_and_copy(size_type new_cap)
+	   {
+		   pointer new_begin = alloc::allocate(new_cap);
+		   pointer cur = new_begin;
+		   auto last = MyCppSTL::uninitialized_copy(_first, _last, cur);
+		   free(_first, _last);
+		   _first = new_begin;
+		   _last = last;
+		   _end_of_storage = _first + new_cap;
 	   }
 
 	   //辅助函数,用于区分整数类型和迭代器类型
@@ -408,43 +389,21 @@ namespace MyCppSTL{
 		   }
 		   if ((size() + count) <= capacity())
 		   {
-			   difference_type distance = end() - pos;
-			   uninitialized_fill_n(_last, count, *(_last - 1));//先构造出count个空间
-			   if (((size_type)distance)<=((size_type)count))  //插入元素的数量count大于pos到_last元素的数量
-			   {
-				   for (auto it = pos; it < _last; ++it) //移动元素
-				   {
-					   *(it + count) = *it;
-				   }
-			   }
-			   else //数量小于distance，那么先移动尾部的元素，在移动pos之后的元素
-			   {
-				   for (auto it2 = end()-1; it2>pos-1; --it2)
-				   {
-					   *(it2 + count) = *it2;
-				   }
-			       for (auto it = pos; it < pos+count; ++it) //移动元素
-				   {
-						   *(it + count) = *it;
-				    }
-				
-			   }
-			   //  //这样的设计是不是很不好？
-			   for (size_type n = 0; n<((size_type)count); ++n)//插入元素
+			   pointer _pos = _first + (pos-begin());      //这种做法？？？？
+			   auto last = uninitialized_fill_n(_last, count, *(_last - 1));//先构造出count个空间
+			   reverse_copy_aux(last - count-1, _pos, last - 1);
+		       for (size_type n = 0; n<((size_type)count); ++n)//插入元素,  //  //这样的设计是不是很不好？
 			   {
 				   *pos++ = value;
 			   }
-			   _last += count;
-
-		   }
+			   _last = last;
+		    }
 		   else  //空间不够
 		   {
-			   difference_type distance = pos - begin();
 			   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
 			   reserve(new_size);
 			   auto new_pos = _first + distance;//恢复位置
 			   insert(new_pos, count, value);  //递归调用
-
 		   }
 	   }
 	   //insert的辅助函数，是迭代器
@@ -455,39 +414,21 @@ namespace MyCppSTL{
 		   {
 			   throw std::out_of_range("out of range");
 		   }
-		   difference_type distance = end() - pos;
 		   difference_type count = last - first;//要插入元素的数量
 		   if (((size_type)count + size()) <= capacity())//有空间，插入
 		   {
-			   uninitialized_fill_n(_last, count, *(_last - 1));//先构造出count个空间
-			   if (((size_type)distance) <= ((size_type)count))  //插入元素的数量count大于pos到_last元素的数量
-			   {
-				   for (auto it = pos; it < _last; ++it) //移动元素
-				   {
-					   *(it + count) = *it;
-				   }
-			   }
-			   else //数量小于distance，那么先移动尾部的元素，在移动pos之后的元素
-			   {
-				   for (auto it2 = end() - 1; it2>pos - 1; --it2)
-				   {
-					   *(it2 + count) = *it2;
-				   }
-				   for (auto it = pos; it < pos + count; ++it) //移动元素
-				   {
-					   *(it + count) = *it;
-				   }
-
-			   }
+			   pointer _pos = _first + (pos - begin());      //这种做法？？？？
+			   auto last_second = uninitialized_fill_n(_last, count, *(_last - 1));//先构造出count个空间
+			   reverse_copy_aux(last_second - count - 1, _pos, last_second - 1);
 			   for (size_type n = 0; n<((size_type)count); ++n)//插入元素
 			   {
 				   *pos++ = *first++;
 			   }
-			   _last += count;
+			   _last =last_second;
 		   }
 		   else//空间不够
 		   {
-			   difference_type distance = pos - begin();
+			   auto distance = pos - begin();
 			   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
 			   reserve(new_size);
 			   auto new_pos = _first + distance;//恢复位置
@@ -512,6 +453,16 @@ namespace MyCppSTL{
 		   {
 			   throw std::out_of_range("out of range");
 		   }
+	   }
+	   //辅助函数，拷贝元素
+	   template<class InputIterator,class OutputIterator>
+	   OutputIterator reverse_copy_aux(InputIterator last, InputIterator first, OutputIterator dest)
+	   {
+		   for (; first <= last; --last,--dest)
+		   {
+			   *dest = *last;
+		   }
+		   return dest;
 	   }
 
 	
@@ -557,6 +508,12 @@ namespace MyCppSTL{
 	bool operator>=(const vector<T>&lhs, const vector<T>&rhs)
 	{
 		return !(lhs < rhs);
+	}
+
+	template< class T, class Alloc >
+	void swap(vector<T>& lhs, vector<T>& rhs)
+	{
+		lhs.swap(rhs);
 	}
 
 }
