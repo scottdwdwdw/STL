@@ -30,17 +30,18 @@
 
 3.[Array类](https://github.com/scottdwdwdw/STL_implement/tree/master/array)<br>
 实现：<br>
->* Element access: at() , operator[] , front() ,back() <br>
->* Iterators:begin   cbegin, end , cend  <br>
->* Capacity: empty(),size(), max_size()<br>
->* operation: fill(),swap()<br>
->* non-member function：operator==,operator!=,operator<,operator<=,operator>,operator>=,get<>()<br>
+>* Element access: 　at() , 　operator[] ,　 front() ,　back() <br>
+>* Iterators:begin，　cbegin, 　end , 　cend  <br>
+>* Capacity: empty(),　size(), 　max_size()<br>
+>* operation: fill(),　swap()<br>
+>* non-member function：　operator==,　　operator!=,　operator<,　operator<=,　operator>,　　operator>=,　　get<>()<br>
 
 4.[Algorithm](https://github.com/scottdwdwdw/STL_implement/blob/master/Algorithm/Algorithm.h)<br>
 实现:
 <br>
->* swap(),iter_swap(),fill(),fill_n(),equal(),lexicographical_compare()
+>* swap(),　iter_swap(),　fill(),　fill_n(),　equal(),　lexicographical_compare()<br>
+　　uninitialized_copy(),　uninitialized_fill(), 　uninitialized_fill_n(),　
 
 5.[Vector](https://github.com/scottdwdwdw/STL_implement/blob/master/vector/Vector.h)<br>
 实现：<br>
->* (constructor)  、  (destructor)、 operator=(赋值构造)，Element access、Iterators、Capacity
+>* 　(constructor),　(destructor),　operator=(赋值构造),　Element access,　Iterators,　　Capacity,　Non-member functions
