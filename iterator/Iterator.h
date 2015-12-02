@@ -704,6 +704,154 @@ namespace MyCppSTL
 
 
 	};
+
+
+
+
+
+	/************容器list的迭代器相关相关*********/
+	//list节点
+	template<class T>
+	struct __list_node
+	{
+		typedef __list_node<T>* _NodePtr;
+		_NodePtr  _pre;
+		_NodePtr  _next;
+		T data;
+	};
+	
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	class const_list_iterator:public iterator<MyCppSTL::bidirectional_iterator_tag,T>
+	{
+	public:  //内嵌型别
+		typedef MyCppSTL::bidirectional_iterator_tag iterator_category;
+		typedef const T*							  pointer;
+		typedef const T&							  reference;
+		typedef const T								  value_type;
+		typedef std::ptrdiff_t						  difference_type;
+		typedef std::size_t							  size_type;
+		typedef __list_node::_NodePtr				  _NodePtr;
+		typedef const_list_iterator<T>				  _MyIterator;
+	public: //构造函数
+		const_list_iterator():_Ptr(0){} //  默认构造函数
+		const_list_iterator(const _NodePtr&ptr) :_Ptr(ptr) {} //赋值构造函数
+
+
+	    /*****迭代器的操作******/
+		//赋值拷贝
+		_MyIterator&operator=(const _MyIterator&rhs)
+		{
+			_Ptr = rhs._Ptr;
+			return *this;
+		}
+
+		//解引用
+		value_type operator*() const
+		{
+			return ((*_Ptr).data);
+		}
+		//箭头指向运算符
+		pointer operator->()const
+		{
+			return (&operator*());
+		}
+		//前置递增
+		_MyIterator& operator++() const
+		{
+			_Ptr = _Ptr->_next;
+			return *this;
+		}
+		//后置递增
+		_MyIterator operator++(int) const
+		{
+			auto tmp = *this;
+			++*this;
+			return tmp;
+		}
+		//前置递减
+		_MyIterator& operator--() const
+		{
+			_Ptr = _Ptr->_pre;
+			return *this;
+		}
+		//后置递减
+		_MyIterator operator--(int) const
+		{
+			auto tmp = *this;
+			--*this;
+			return tmp;
+		}
+
+		//比较操作符
+		bool operator==(const _MyIterator&rhs) const
+		{
+			return (_Ptr == rhs._Ptr);
+		}
+		bool operator!=(const _MyIterator&rhs)const
+		{
+			return (!(*this == rhs));
+		}
+
+	private:
+		_NodePtr _Ptr;    //指向链表节点的指针
+	};
+
+	//list非常量版本迭代器
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	class list_iterator :public const_list_iterator<T>
+	{
+	public:
+		typedef T*							  pointer;
+		typedef T&							  reference;
+		typedef T							  value_type;
+		typedef std::ptrdiff_t				  difference_type;
+		typedef std::size_t				      size_type;
+		typedef list_iterator<T>			  _MyIterator;
+		typedef const_list_iterator<T>        _MyBase;
+		typedef const_list_iterator<T>::_NodePtr _NodePtr;
+	public:
+		//构造函数
+		list_iterator() :_MyBase() {}  //默认构造器
+		list_iterator(const _NodePtr&ptr) :_MyBase(ptr) {} 
+
+		//迭代器操作
+		_MyIterator&operator=(const _MyIterator&rhs)
+		{
+			_Ptr = rhs._Ptr;
+			return *this;
+		}
+		//前置递增
+		_MyIterator&operator++()
+		{
+			++(_MyBase)(*this);   //调用基类的前置递增
+			return *this;
+		}
+		//后置递增
+		_MyIterator operator++(int)
+		{
+			++*this;  
+			return *this;
+		}
+		//前置递增
+		_MyIterator&operator--()
+		{
+			--(_MyBase)(*this);
+			return *this;
+		}
+
+		//后置递减
+		_MyIterator operator--(int)
+		{
+			auto tmp = *this;
+			--*this;
+			return tmp;
+		}
+
+		//比较操作使用基类的
+
+	};
+
 	
 }
 #endif
