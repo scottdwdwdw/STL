@@ -303,6 +303,7 @@ void __default_alloc_template<inst>::deallocate(void * p, size_t n)
 	if (n > ((size_t)__MAX_BYTES))
 	{
 		malloc_alloc::deallocate(p,n);
+		return;
 	}
 	my_free_list = free_lists + FREELIST_INDEX(n);
 	/*将p所指向的空间插到链表头*/
