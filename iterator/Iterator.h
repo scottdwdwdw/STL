@@ -725,14 +725,14 @@ namespace MyCppSTL
 	class const_list_iterator:public iterator<MyCppSTL::bidirectional_iterator_tag,T>
 	{
 	public:  //内嵌型别
-		typedef MyCppSTL::bidirectional_iterator_tag iterator_category;
-		typedef const T*							  pointer;
-		typedef const T&							  reference;
-		typedef const T								  value_type;
+		typedef MyCppSTL::bidirectional_iterator_tag      iterator_category;
+		typedef  const T*					          pointer;
+		typedef  const T&					          reference;
+		typedef  const T						      value_type;
 		typedef std::ptrdiff_t						  difference_type;
 		typedef std::size_t							  size_type;
-		typedef __list_node::_NodePtr				  _NodePtr;
-		typedef const_list_iterator<T>				  _MyIterator;
+		typedef __list_node<T>*					      _NodePtr;
+		typedef const_list_iterator<T>		         _MyIterator;
 	public: //构造函数
 		const_list_iterator():_Ptr(0){} //  默认构造函数
 		const_list_iterator(const _NodePtr&ptr) :_Ptr(ptr) {} //赋值构造函数
@@ -757,26 +757,26 @@ namespace MyCppSTL
 			return (&operator*());
 		}
 		//前置递增
-		_MyIterator& operator++() const
+		_MyIterator& operator++()
 		{
 			_Ptr = _Ptr->_next;
 			return *this;
 		}
 		//后置递增
-		_MyIterator operator++(int) const
+		_MyIterator operator++(int)
 		{
 			auto tmp = *this;
 			++*this;
 			return tmp;
 		}
 		//前置递减
-		_MyIterator& operator--() const
+		_MyIterator& operator--()
 		{
 			_Ptr = _Ptr->_pre;
 			return *this;
 		}
 		//后置递减
-		_MyIterator operator--(int) const
+		_MyIterator operator--(int)
 		{
 			auto tmp = *this;
 			--*this;
@@ -797,6 +797,7 @@ namespace MyCppSTL
 		_NodePtr _Ptr;    //指向链表节点的指针
 	};
 
+	
 	//list非常量版本迭代器
 	template<class T,class alloc=MyCppSTL::allocator<T>>
 	class list_iterator :public const_list_iterator<T>
@@ -822,9 +823,9 @@ namespace MyCppSTL
 			return *this;
 		}
 		//前置递增
-		_MyIterator&operator++()
+		_MyIterator& operator++()
 		{
-			++(_MyBase)(*this);   //调用基类的前置递增
+			++*((_MyBase*)this);   //调用基类的前置递增
 			return *this;
 		}
 		//后置递增
@@ -836,7 +837,7 @@ namespace MyCppSTL
 		//前置递增
 		_MyIterator&operator--()
 		{
-			--(_MyBase)(*this);
+			--*((_MyBase*)this);
 			return *this;
 		}
 
@@ -851,7 +852,7 @@ namespace MyCppSTL
 		//比较操作使用基类的
 
 	};
-
+	
 	
 }
 #endif
