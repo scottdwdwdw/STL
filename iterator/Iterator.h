@@ -737,6 +737,12 @@ namespace MyCppSTL
 		const_list_iterator():_Ptr(0){} //  默认构造函数
 		const_list_iterator(const _NodePtr&ptr) :_Ptr(ptr) {} //赋值构造函数
 
+		//获取节点函数
+
+		_NodePtr&getMynode()
+		{
+			return _Ptr;
+		}
 
 	    /*****迭代器的操作******/
 		//赋值拷贝
@@ -816,7 +822,13 @@ namespace MyCppSTL
 		list_iterator() :_MyBase() {}  //默认构造器
 		list_iterator(const _NodePtr&ptr) :_MyBase(ptr) {} 
 
+	
 		//迭代器操作
+
+		value_type operator*()
+		{
+			return (**(_MyBase*)this);
+		}
 		_MyIterator&operator=(const _MyIterator&rhs)
 		{
 			_Ptr = rhs._Ptr;
