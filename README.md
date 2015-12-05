@@ -50,9 +50,9 @@
 
 6.[List](https://github.com/scottdwdwdw/STL/blob/master/List/List.h)<br>
 实现：<br>
->*　(constructor)
->*　(destructor)
->*　Element access
->*　Iterators
->*　Capacity
->*　Modifiers
+>*　(constructor)<br>
+>*　(destructor)<br>
+>*　Element access<br>
+>*　Iterators<br>
+>*　Capacity<br>
+>*　Modifiers<br>
