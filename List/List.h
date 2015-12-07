@@ -3,6 +3,7 @@
 
 #include<initializer_list>
 #include"Allocator.h"
+#include"Algorithm.h"
 #include"Iterator.h"
 #include"Construct.h"
 #include<cassert>
@@ -60,7 +61,8 @@ namespace MyCppSTL
 		//赋值构造函数,使用迭代器来进行拷贝
 		list(const list& other)
 		{
-			list_aux(other.begin(), other.end(), std::false_type());
+			head=list_aux(other.begin(), other.end(), std::false_type());
+			tail = head->_pre;
 		}
 		//移动构造函数
 		list(list&& other) :head(other.cur), tail(other.tail)
@@ -70,7 +72,8 @@ namespace MyCppSTL
 		//列表初始化
 		list(std::initializer_list<T> init)
 		{
-			list_aux(std::begin(init), std::end(init), std::false_type());
+			head=list_aux(std::begin(init), std::end(init), std::false_type());
+			tail = head->_pre;
 		}
 
 		//析构函数,使用迭代器来销毁
@@ -180,7 +183,11 @@ namespace MyCppSTL
 		{
 			NodePtr sub_list=creat_node(count, value);   //先构造这count个链表
 			NodePtr sub_tail = sub_list->_pre;
-			link_list(pos, sub_list, sub_tail);
+			if (sub_list != sub_tail)
+			{
+				link_list(pos, sub_list, sub_tail);
+				destory_node(sub_tail);
+			}
 		}
 
 		
@@ -201,31 +208,21 @@ namespace MyCppSTL
 		}
 		void pop_back()
 		{
-			auto tmp = tail->_pre;
-			tail->_pre->_pre->_next = tail;
-			tail->_pre = tail->_pre->_pre;
-			destory_node(tmp);
+			erase(--end());
 		}
 		void push_front(const value_type& data)
 		{
 			insert(begin(), data);
-
 		}
 
 		void pop_front()
 		{
-			auto tmp = head;
-			tail->_next = head->_next;
-			head->_next->_pre = tail;
-			head = tail->_next;   //头部移动
-			destory_node(tmp);
+			erase(begin());
 		}
 
 		void clear()   //清空
 		{
-			tail = head;
-			head->_next = tail;
-			tail->_pre = head;
+			erase(begin(), end());
 		}
 
 		iterator erase(iterator pos)
@@ -280,31 +277,199 @@ namespace MyCppSTL
 
 		void resize(size_type count)
 		{
-			if (count >= size())
-			{
-				insert(end(), count - size(), T());
-			}
-			else
-			{
-				if (count == 0) 
-				{
-					clear();
-					return;
-				}
-				auto tmp = head;
-				while (--count)
-				{
-					tmp = tmp->_pre;
-				}
-				tmp->_next = tail;
-				tail->_pre = tmp;
-			}
+			resize(count, T());
 		}
 		void resize(size_type count, const value_type& value)
 		{
-			
+			if (count >= size())
+			{
+				insert(end(), count - size(), value);
+			}
+			else
+			{
+				auto erase_count = size() - count;
+				auto iter = end();
+				while (erase_count--)--iter;
+				erase(iter, end());
+			}
+		}
+
+		//交换两list
+		void swap(list<T>&other)
+		{
+			using std::swap;
+			if (head != other.head)
+			{
+				swap(head, other.head);
+				swap(tail, other.tail);
+			}
+		}
+
+		//算法类
+		//将两排好序的链表链接起来
+
+
+		void merge(list& other)
+		{
+			auto first1 = begin();
+			auto last1 = end();
+			auto first2 = other.begin();
+			auto last2 = other.end();
+			for (; first1 != last1&&first2 != last2; )
+			{
+				if (*first1 > *first2)
+				{
+					insert(first1, *first2);
+					++first2;
+				}
+				else
+					++first1;
+			}
+			if (first2 != last2)insert(last1, first2, last2);
+
+		}
+
+		template <class Compare>
+		void merge(list& other, Compare comp)
+		{
+			auto first1 = begin();
+			auto last1 = end();
+			auto first2 = other.begin();
+			auto last2 = other.end();
+			for (; first1 != last1&&first2 != last2; )
+			{
+				if (!comp(*first1,*first2))
+				{
+					insert(first1, *first2);
+					++first2;
+				}
+				else
+					++first1;
+			}
+			if (first2 != last2)insert(last1, first2, last2);
 		}
 	
+		void remove(const T& value)
+		{
+			auto it = head;
+			while (it != tail)
+			{
+				if (it->data == value)
+				{
+					auto tmp = it;
+					it = it->_next;
+					erase(iterator(tmp));
+				}
+				else
+					it = it->_next;
+			}
+		}
+		template< class UnaryPredicate >
+		void remove_if(UnaryPredicate p)
+		{
+			auto it = head;
+			while (it != tail)
+			{
+				if (p(it->data))
+				{
+					auto tmp = it;
+					it = it->_next;
+					erase(iterator(tmp));
+				}
+				else
+					it = it->_next;
+			}
+		}
+		void splice(const_iterator pos, list& other)
+		{
+			if (other.size() != 0)
+			{
+				link_list(pos, other.head, other.tail);
+				other.head = other.tail;
+				if(other.size()==0)free(other.head, other.tail);
+			}
+		}
+
+		void splice(const_iterator pos, list& other, const_iterator it)
+		{
+			
+			if (other.size() != 0)
+			{
+				if (it == other.begin())other.head = other.head->_next;
+				auto it2 = it;
+				++it2;
+				link_list(pos, it.getMynode(), it2.getMynode());
+				if (other.size() == 0)free(other.head, other.tail);
+			}
+		}
+
+		void splice(const_iterator pos, list& other, const_iterator first, const_iterator last)
+		{
+			if (other.size() != 0)
+			{
+				if (first == other.begin())other.head = last.getMynode();
+				link_list(pos, first.getMynode(),last.getMynode());
+				if (other.size() == 0)free(other.head, other.tail);
+			}
+		}
+
+		void reverse()
+		{
+			auto it = head;
+			auto it2 = head->_next;
+			while (it != tail)
+			{
+				it->_next = it->_pre;
+				it->_pre = it2;
+				it = it2;
+				it2 = it2->_next;
+			}
+			head = it->_pre;
+			it->_next = it->_pre;
+			it->_pre = it2;
+			
+		}
+
+		void unique()
+		{
+			auto it1 = head;
+			auto it2 = head->_next;
+			while (it2 != tail)
+			{
+				if (it1->data == it2->data)
+				{
+					auto tmp = it2;
+					it2 = it2->_next;
+					erase(iterator(tmp));
+				}
+				else
+				{
+					it1 = it2;
+					it2 = it2->_next;
+				}
+			}
+		}
+
+		template< class BinaryPredicate >
+		void unique(BinaryPredicate p)
+		{
+			auto it1 = head;
+			auto it2 = head->_next;
+			while (it2 != tail)
+			{
+				if (p(it1->data,it2->data))
+				{
+					auto tmp = it2;
+					it2 = it2->_next;
+					erase(iterator(tmp));
+				}
+				else
+				{
+					it1 = it2;
+					it2 = it2->_next;
+				}
+			}
+		}
 	private://辅助函数
 		//构造一个节点
 		NodePtr get_node()    
@@ -379,14 +544,18 @@ namespace MyCppSTL
 
 
 		//辅助函数，将一个链表链接到本链表指定位置
-		void link_list(iterator pos, NodePtr&sub_list, NodePtr&sub_tail)
+		void link_list(const_iterator pos, NodePtr&sub_list, NodePtr&sub_tail)
 		{
 			sub_tail->_pre->_next = pos.getMynode();
-			sub_list->_pre = pos.getMynode()->_pre;
-			pos.getMynode()->_pre->_next = sub_list;
+			sub_list->_pre->_next = sub_tail;
+			auto tmp = pos.getMynode()->_pre;
+			//auto tmp2 = sub_list;
+			tmp->_next = sub_list;
 			pos.getMynode()->_pre = sub_tail->_pre;
+			sub_tail->_pre = sub_list->_pre;
+			sub_list->_pre = tmp;
 			if (head == pos.getMynode())head = sub_list;
-			destory_node(sub_tail);
+		//	destory_node(sub_tail);
 		}
 		//
 		//list接受一对迭代器范围构造函数
@@ -409,7 +578,11 @@ namespace MyCppSTL
 		{
 			NodePtr sub_list = creat_node(first, last, std::false_type());
 			NodePtr sub_tail = sub_list->_pre;
-			link_list(pos, sub_list, sub_tail);
+			if (sub_list != sub_tail)
+			{
+				link_list(pos, sub_list, sub_tail); //防止加入的是一个空链表
+				destory_node(sub_tail);
+			}
 		}
 
 		template< class InputIt >
@@ -417,11 +590,74 @@ namespace MyCppSTL
 		{
 			NodePtr sub_list = creat_node(first, last);
 			NodePtr sub_tail = sub_list->_pre;
-			link_list(pos, sub_list, sub_tail);
+			if (sub_list != sub_tail)
+			{
+				link_list(pos, sub_list, sub_tail);
+				destory_node(sub_tail);
+			}
 		}
 		
 
 	};
+
+
+	//非成员函数
+	template<class T>
+	void swap(MyCppSTL::list<T>&lhs,MyCppSTL::list<T>&rhs)
+	{
+		lhs.swap(rhs);
+	}
+
+	template< class T >
+	bool operator==(const list<T>& lhs, const list<T>& rhs)
+	{
+		if (lhs.size() == rhs.size())
+		{
+			auto first1 = lhs.begin();
+			auto last1 = lhs.end();
+			auto first2 = rhs.begin();
+			auto last2 = rhs.end();
+			for (; first1 != last1; ++first1, ++first2)
+			{
+				if (*first1 != *first2)
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	template< class T>
+	bool operator!=(list<T>& lhs, list<T>& rhs)
+	{
+		return (!(lhs == rhs));
+	}
+
+	template< class T>
+	bool operator<(const list<T>& lhs, const list<T>& rhs)
+	{
+		return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+	}
+
+	template< class T>
+	bool operator>(const list<T>& lhs, const list<T>& rhs)
+	{
+		return (rhs < lhs);
+	}
+
+	template< class T>
+	bool operator<=(const list<T>& lhs, const list<T>& rhs)
+	{
+		return !(lhs>rhs);
+	}
+
+	template< class T>
+	bool operator>=(const list<T>& lhs, const list<T>& rhs)
+	{
+		return (!(lhs < rhs));
+	}
+
+
 
 
 }
