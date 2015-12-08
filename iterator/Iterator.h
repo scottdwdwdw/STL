@@ -738,7 +738,6 @@ namespace MyCppSTL
 		const_list_iterator(const _NodePtr&ptr) :_Ptr(ptr) {} //赋值构造函数
 
 		//获取节点函数
-
 		_NodePtr&getMynode()
 		{
 			return _Ptr;
@@ -865,10 +864,120 @@ namespace MyCppSTL
 
 	};
 	
-	
+
+
+	/*  deque的const迭代器 */
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	class deque_const_iterator :public iterator<MyCppSTL::random_access_iterator_tag, const T, std::ptrdiff_t, const T*, const T&>
+	{
+	public:
+		//内嵌型别
+		typedef const T         value_type;
+		typedef const T&        reference_type;
+		typedef const T*        pointer;
+
+		typedef std::size_t      size_type;
+		typedef std::ptrdiff_t	difference_type;
+		typedef deque_const_iterator<T> _MyIter;
+		typedef pointer*		map_pointer;
+	private:
+		//成员
+		pointer _first;   //当前缓冲区的开始位置
+		pointer _last;    //当前缓冲区的结束位置,尾后位置
+		pointer _cur;     //当前迭代器处于缓冲区的位置
+		map_pointer _node;  //指向map的指针
+	public:
+		//构造函数
+		deque_const_iterator(pointer cur, map_pointer node) :_cur(cur), _node(node)
+		{
+			_first = *_node;
+			_last = _first + deque_buf_size(sizeof(value_type));   //
+		}
+		//迭代器操作
+		value_type&operator*() const //取值
+		{
+			return *_cur;
+		}
+		//迭代器自增 ++
+		_MyIter&operator++() //前置递增
+		{
+			++_cur;
+			if (_cur == _last)   //到达该缓冲区的末尾
+			{
+				set_node(_node + 1);
+				_cur = _first;
+			}
+			return *this;
+		}
+
+		_MyIter operator++(int) //后置递增
+		{
+			auto tmp = *this;
+			++*this;
+			return tmp;
+		}
+
+		_MyIter&operator+=(difference_type n) //复合赋值
+		{
+			
+		}
+
+		_MyIter&operator--() //前置递减
+		{
+			//--_cur;
+			if (_cur == _first)   //到达该缓冲区的末尾
+			{
+				set_node(_node-1);
+			}
+			_cur = --_last;
+			return *this;
+		}
+
+		_MyIter operator--(int) //后置递减
+		{
+			auto tmp = *this;
+			--*this;
+			return tmp;
+		}
+
+	protected:
+		void set_node(_MyIter&node)
+		{
+			_node = node;
+			_first = *node;
+			_last = _first + difference_type(deque_buf_size(sizeof(value_type)));
+		}
+		size_type deque_buf_size(size_type n)
+		{
+			return n < 512 ? (512 / n) : size_type(1);
+		}
+
+	};
+
+
+
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	class deque_iterator :public deque_const_iterator<T>
+	{
+	public:
+		//内嵌型别
+		typedef  T         value_type;
+		typedef  T&        reference_type;
+		typedef  T*        pointer;
+		typedef std::size_t      size_type;
+		typedef std::ptrdiff_t	difference_type;
+		typedef deque_const_iterator<T> _MyBase;
+		typedef deque_iterator<T>	_Myiter;
+		typedef pointer*		map_pointer;
+
+	public:
+		//迭代器操作
+
+	};
 }
+
+
+
 #endif
-
-
 
 
