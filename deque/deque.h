@@ -4,7 +4,9 @@
 #include"Allocator.h"
 #include"Iterator.h"
 #include"Algorithm.h"
+#include"__Type_traits.h"
 #include<algorithm>
+#include<initializer_list>
 
 
 
@@ -12,8 +14,7 @@
 namespace MyCppSTL
 {
 
-
-
+	
 	#define	_NODE_SIZE 8
 	#define max(a,b)  (a>b)?(a):(b)
 	inline std::size_t __deque_buf_size(std::size_t n) { return n < 512 ? (512 / n) : std::size_t(1); }
@@ -22,6 +23,7 @@ namespace MyCppSTL
 	template<class T,class alloc=MyCppSTL::allocator<T>>
 	class deque_const_iterator :public iterator<MyCppSTL::random_access_iterator_tag, T>
 	{
+	
 	public:
 		//内嵌型别
 		typedef  T							value_type;
@@ -130,11 +132,12 @@ namespace MyCppSTL
 			return *this;
 		}
 
-		_MyIter operator-(difference_type n) //复合赋值
+		difference_type operator-(const _MyIter&rhs) //迭代器距离
 		{
-			auto tmp = *this;
-			tmp -= n;
-			return tmp;
+			auto n_node = _node-rhs._node;
+			auto distance_tmp = n_node*__deque_buf_size(sizeof(T));
+			auto distance = distance_tmp + (_cur - _first);
+			return distance;
 		}
 
 		const_reference operator[](const size_type n)
@@ -309,7 +312,42 @@ class deque {
 	template< class InputIt >
 	deque(InputIt first, InputIt last)
 	{
-		
+		initialize_dispatch(first, last, std::is_integral<InputIt>::type());//输入的可能是两个整数，可能是两个迭代器，调用不同的函数
+	}
+
+	deque(const deque& other) //拷贝构造函数
+	{
+		initialize_dispatch(other.begin(), other.end(),std::false_type());
+	}
+
+	deque(deque&& other):_begin(other._begin),_end(other._end),_map(other._map),_map_size(other._map_size)
+	{
+		other._begin._cur= other._begin._first=other._begin._last=0;
+		other._begin._node =0;
+		other._end._cur =other._end._first = other._end._last = 0;
+		other._end._node = 0;
+		other._map = 0;
+		other._map_size = 0;
+	}
+
+	deque(std::initializer_list<T> init)
+	{
+		range_initialize(init.begin(), init.end(), forward_iterator_tag());
+	}
+	//析构
+	~deque()
+	{
+		if (_begin._cur)
+		{
+			auto it = begin()._node;
+			for (; it < end()._node; ++it)
+			{
+				destroy(*it, *it + __deque_buf_size(sizeof(T)));
+				alloc::deallocate(*it, __deque_buf_size(sizeof(T)));
+			}
+			destroy(*it, *it + (end()._cur - *it));
+			alloc::deallocate(*it, end()._cur - *it);
+		}
 	}
 
 	//迭代器
@@ -332,7 +370,7 @@ class deque {
 	}
 	const_iterator cend() const
 	{ 
-		return const_iterator(_finish._cur, _finish._node); 
+		return const_iterator(_end._cur, _end._node); 
 	}
 
 	//元素操作
@@ -353,11 +391,18 @@ class deque {
 		std::size_t deque_buf_size(std::size_t n) { return __deque_buf_size(n); }
 		void create_map(size_type elem_num);
 		void create_map_and_node(size_type elem_num,value_type value);
+		void node_move(map_pointer node);
 
-		template< class InputIt >
-		void deque_aux(InputIt first, InputIt last, std::false_type);  //是迭代器
-		template< class InputIt >
-		void deque_aux(InputIt first, InputIt last, std::true_type);   //不是迭代器
+		
+		template<class InputIter>
+		inline void initialize_dispatch(InputIter first, InputIter last, std::false_type);
+		template<class Integer>
+		inline void initialize_dispatch(Integer count, Integer value, std::true_type);
+
+		template<class InputIter>
+		void range_initialize(InputIter first, InputIter last, MyCppSTL::forward_iterator_tag);
+		template<class InputIter>
+		void range_initialize(InputIter first, InputIter last, MyCppSTL::input_iterator_tag);
 		
 		void push_back_aux(const value_type&value); //当map空间不够的时候从新分配
 		void push_front_aux(const value_type&value);
@@ -413,17 +458,52 @@ class deque {
 		}
 		uninitialized_fill(_end._first, _end._cur, value);
 	}
+	
 
 	template<class T,class alloc=MyCppSTL::allocator<T>>
-	template<class InputIt>
-	void deque<T, alloc>::deque_aux(InputIt first, InputIt last, std::false_type)
+	template<class Integer>
+	inline void deque<T,alloc>::initialize_dispatch(Integer count, Integer value, std::true_type)
 	{
-		create_map(0);   //构造出空deque
-		for (; first < last; ++first)
+		create_map_and_node(count, value);
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class InputIter>      //是迭代器
+	inline void deque<T, alloc>::initialize_dispatch(InputIter first, InputIter last,std::false_type)
+	{
+		//如果是input_iterator,调用push_back来实现
+		//如果是forward_iterator或更好的迭代器，则调用它们的copy 构造函数来实现
+		typedef typename iterator_traits<InputIter>::iterator_category Cat;
+		range_initialize(first, last, Cat());   //调用相应的迭代器
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class ForwardIter>
+	void deque<T, alloc>::range_initialize(ForwardIter first, ForwardIter last, MyCppSTL::forward_iterator_tag)
+	{
+		difference_type n = last - first;
+		create_map(n);   //创造出map节点,并设置好迭代器
+		iterator cur_iter = _begin;
+		for (; n> 0; --n,++first)
 		{
-		
+			construct(cur_iter._cur, *first);  //创建
+			++(cur_iter._cur);
+			if (cur_iter._cur == cur_iter._last)
+			{
+				++cur_iter;
+			}
+
 		}
 	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class InputIter>
+	void deque<T, alloc>::range_initialize(InputIter first, InputIter last, MyCppSTL::input_iterator_tag)
+	{
+		//调用push_back来完成
+	}
+
+
 
 
 }  
