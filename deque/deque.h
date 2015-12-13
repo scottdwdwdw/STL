@@ -14,10 +14,15 @@
 namespace MyCppSTL
 {
 
-	
+//#define DEBUG
 	#define	_NODE_SIZE 8
 	#define max(a,b)  (a>b)?(a):(b)
+#ifdef DEBUG
+	inline std::size_t __deque_buf_size(std::size_t n) { return n < 2 ? (512 / n) : std::size_t(4); }
+#else
 	inline std::size_t __deque_buf_size(std::size_t n) { return n < 512 ? (512 / n) : std::size_t(1); }
+#endif
+	
 
 	/*  deque的const迭代器 */
 	template<class T,class alloc=MyCppSTL::allocator<T>>
@@ -55,7 +60,7 @@ namespace MyCppSTL
 		}
 	   
 		//拷贝构造函数
-		deque_const_iterator(_MyIter&rhs) :_cur(rhs._cur), _node(rhs._node), _first(rhs._first), _last(rhs._last)
+		deque_const_iterator(const _MyIter&rhs) :_cur(rhs._cur), _node(rhs._node), _first(rhs._first), _last(rhs._last)
 		{
 		}
 		
@@ -115,8 +120,9 @@ namespace MyCppSTL
 			if (_cur == _first)   //到达该缓冲区的末尾
 			{
 				set_node(_node - 1);
+				_cur = _last;
 			}
-			_cur = --_last;
+			--_cur;
 			return *this;
 		}
 
@@ -132,9 +138,9 @@ namespace MyCppSTL
 			return *this;
 		}
 
-		difference_type operator-(const _MyIter&rhs) //迭代器距离
+		difference_type operator-(const _MyIter&rhs) const//迭代器距离
 		{
-			auto n_node = _node-rhs._node;
+			auto n_node = _node-rhs._node+1;
 			auto distance_tmp = n_node*__deque_buf_size(sizeof(T));
 			auto distance = distance_tmp + (_cur - _first);
 			return distance;
@@ -198,7 +204,7 @@ class deque_iterator :public deque_const_iterator<T>
 		typedef const T*					const_pointer;
 		typedef std::size_t					size_type;
 		typedef std::ptrdiff_t				difference_type;
-		typedef deque_const_iterator<T>    _MyIter;
+	//	typedef deque_const_iterator<T>    _MyIter;
 		typedef pointer*				   map_pointer;
 		typedef deque_iterator<T>          _Myiter;
 		typedef deque_const_iterator<T>    _MyBase;
@@ -252,11 +258,18 @@ class deque_iterator :public deque_const_iterator<T>
 			return tmp;
 		}
 
+		
 		_Myiter operator-(difference_type n)
 		{
 			auto tmp = *this;
 			tmp += -n;
 			return tmp;
+		}
+		
+		
+		difference_type operator-(const _Myiter&rhs) const
+		{
+			return  ((*(_MyBase*)this) - rhs);
 		}
 
 		_Myiter &operator-=(difference_type n)
@@ -337,17 +350,85 @@ class deque {
 	//析构
 	~deque()
 	{
-		if (_begin._cur)
+		free();
+	}
+	//拷贝赋值运算符
+	my_deque&operator=(const my_deque&rhs)
+	{
+		if (_begin._cur != rhs._begin._cur)
 		{
-			auto it = begin()._node;
-			for (; it < end()._node; ++it)
-			{
-				destroy(*it, *it + __deque_buf_size(sizeof(T)));
-				alloc::deallocate(*it, __deque_buf_size(sizeof(T)));
-			}
-			destroy(*it, *it + (end()._cur - *it));
-			alloc::deallocate(*it, end()._cur - *it);
+			range_initialize(rhs.begin(), rhs.end(), MyCppSTL::forward_iterator_tag());
 		}
+
+		return *this;
+	}
+	my_deque&operator=(my_deque&&rhs)
+	{
+		if (_begin._cur != rhs._begin._cur)
+		{
+			_begin = rhs._begin;
+			_end = rhs._end;
+			_map = rhs._map;
+			_map_size = rhs._map_size;
+			rhs._begin._cur = 0; rhs._end._cur = 0; rhs._begin._first = rhs._begin._last = 0; rhs._begin._node = 0;
+			rhs._end._first = rhs._end._last = 0; rhs._end._node = 0;
+			rhs._map = 0;
+			rhs._map_size = 0;
+		}
+		return *this;
+	}
+	my_deque&operator=(const std::initializer_list<T>&rhs)
+	{
+		range_initialize(rhs.begin(), rhs.end(), MyCppSTL::forward_iterator_tag());
+		return *this;
+	}
+	//element access
+	reference at(size_type pos)
+	{
+		if (pos > size())std::out_of_range("out of range");
+		return *(begin() + pos);
+	}
+	const_reference at(size_type pos) const
+	{
+		if (pos > size())std::out_of_range("out of range");
+		return *(begin() + pos);
+	}
+
+	reference operator[](size_type pos)
+	{
+		return *(begin() + pos);
+	}
+	const_reference operator[](size_type pos) const
+	{
+		return *(begin() + pos);
+	}
+
+	reference front()
+	{
+		return *begin();
+	}
+
+	const_reference front() const
+	{
+		return *begin();
+	}
+	reference back()
+	{
+		return *(end() - 1);
+	}
+	const_reference back() const
+	{
+		return *(end() - 1);
+	}
+	//capacity
+	size_type size() const
+	{
+		//return (size_type)(end()-begin());
+		return (size_type)(_end - _begin);
+	}
+	bool empty() const
+	{
+		return (_begin._cur==_end._cur);
 	}
 
 	//迭代器
@@ -376,14 +457,34 @@ class deque {
 	//元素操作
 	void push_back(const value_type&value)
 	{
-		if (_end._cur != _end._last)
+		if (_end._cur != _end._last-1)  //*****留下1个空间
 		{
 			construct(_end._cur, value);
+			++_end;
 		}
 		else
 		{
-		
+			push_back_aux(value);
 			
+		}
+	}
+
+	void push_back(T&& value)
+	{
+		
+	}
+
+	void push_front(const T& value)
+	{
+		if (_begin._cur != _begin._first)
+		{
+			--_begin;
+			construct(_begin._cur, value);
+			
+		}
+		else
+		{
+			push_front_aux(value);
 		}
 	}
 	protected:
@@ -412,6 +513,21 @@ class deque {
 		void reserve_map_at_front(size_type nodes_to_add = 1);
 		void reallocate_map(size_type nodes_to_add, bool add_at_front);
 
+	
+		void free()
+		{
+			if (_begin._cur)
+			{
+				auto it = begin()._node;
+				for (; it < end()._node; ++it)
+				{
+					destroy(*it, *it + __deque_buf_size(sizeof(T)));
+					alloc::deallocate(*it, __deque_buf_size(sizeof(T)));
+				}
+				destroy(*it, *it + (end()._cur - *it));
+				alloc::deallocate(*it, end()._cur - *it);
+			}
+		}
 	private:
 		map_pointer	_map; //指向map的指针
 		size_type _map_size; //map大小
@@ -433,6 +549,7 @@ class deque {
 		//deque_buf_size返回的是单个节点存储大小
 		size_type num_nodes = elem_num / deque_buf_size(sizeof(value_type)) +1;  
 		_map_size = max(NODESIZE, num_nodes+2);   
+	//	_map_size = max(NODESIZE, num_nodes);
 		_map =map_alloc::allocate(_map_size);    //分配节点
 		map_pointer nstart = _map + (_map_size - num_nodes) / 2;//从中间开始
 		map_pointer nend = nstart + num_nodes-1;    
@@ -503,6 +620,79 @@ class deque {
 		//调用push_back来完成
 	}
 
+	
+	
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	void deque<T, alloc>::reallocate_map(size_type nodes_to_add, bool add_at_front)
+	{
+		size_type old_nodes = (size_type)((_end._node - _begin._node)+1);   //分配前的节点数
+		size_type new_nodes = old_nodes + nodes_to_add;
+
+		map_pointer new_begin;
+		if (2*new_nodes < _map_size) //旧的map空间还有足够的空间
+		{
+			new_begin = _map + (_map_size - new_nodes) / 2 + (add_at_front ? nodes_to_add : 0);  //调整开始位置
+			if (new_begin < _begin._node)//at_back
+			{
+				MyCppSTL::copy(_begin._node, _end._node+1, new_begin);  
+			}
+			else //at_front
+			{
+				MyCppSTL::copy_backward(_begin._node, _end._node+1, new_begin+old_nodes);
+			}
+		}
+		else  //空间不够，需要重新分配
+		{
+			size_type new_map_size = _map_size + (max(_map_size, nodes_to_add)) + 2;
+			map_pointer new_map = map_alloc::allocate(new_map_size);   //分配新的map节点空间
+			new_begin = new_map + (new_map_size - new_nodes) / 2+(add_at_front?nodes_to_add:0); //确定新的起始位置
+			copy(_begin._node, _end._node+1, new_begin);
+			map_alloc::deallocate(_map, _map_size);
+			_map = new_map;
+			_map_size = new_map_size;
+		}
+		_begin.set_node(new_begin);
+		_end.set_node(new_begin + old_nodes - 1);//将原有的节点拷贝到新节点处完毕
+	}
+
+	template<class T,class alloc=allocator<T>>
+	void deque<T,alloc>::reserve_map_at_back(size_type nodes_to_add = 1)
+	{
+		if ((nodes_to_add + 1) > (_map_size - (_end._node-_map)))
+		{
+			reallocate_map(nodes_to_add, false);
+		}
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	void deque<T,alloc>::reserve_map_at_front(size_type nodes_to_add = 1)
+	{
+		if ((difference_type)nodes_to_add > (_begin._node-_map))
+		{
+			reallocate_map(nodes_to_add, true);
+		}
+	}
+
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	void deque<T, alloc>::push_back_aux(const value_type&value)
+	{
+		reserve_map_at_back();    //首先分配map节点
+		*(_end._node + 1) = alloc::allocate(deque_buf_size(sizeof(value_type)));//为新的map节点分配存储区
+		construct(_end._cur, value); 
+		_end.set_node(_end._node + 1);
+		_end._cur = _end._first;
+	
+	}
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	void deque<T, alloc>::push_front_aux(const value_type&value)
+	{
+		reserve_map_at_front();
+		*(_begin._node - 1) = alloc::allocate(deque_buf_size(sizeof(value_type)));
+		_begin.set_node(_begin._node - 1);
+		_begin._cur = _begin._last - 1;
+		construct(_begin._cur, value);
+		//--_begin;
+	}
 
 
 
