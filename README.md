@@ -2,7 +2,8 @@
 
 编译环境：vs2015 <br>
 参考资料：[C++ reference](http://en.cppreference.com/w/)<br>
-          \<\<STL源码剖析\>\><br>
+　　　　　[libstdc++](https://gcc.gnu.org/onlinedocs/gcc-4.8.1/libstdc++/api/a00708.html#a8e32f71311ef10141cabaab48ac8e414)<br>
+　　　　　\<\<STL源码剖析\>\><br>
 
 =======================
 1.allocator的实现<br>
