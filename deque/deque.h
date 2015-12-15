@@ -508,21 +508,74 @@ class deque {
 	//插入元素
 	iterator insert(iterator pos, size_type count, const T& value)
 	{
-		size_type index = pos - _begin;    //计算当前要插入的位置离哪一端近
-		bool at_front = (index > (size() / 2)) ? false : true;
-
-		//移动前部/后部
-		if (at_front)
-		{
-			return insert_at_begin(pos, count, value);
-		}
-		else
-		{
-			return insert_at_end(pos, count, value);
-		}
+		return (insert_dispatch(pos, count, value));
 
 	}
 
+	iterator insert(iterator pos, const T&value)
+	{
+		return (insert_dispatch(pos, 1, value));
+	}
+
+	template< class InputIt >
+	iterator  insert(iterator pos, InputIt first, InputIt last)
+	{
+		return (insert_aux(pos, first, last, std::is_integral<InputIt>::type()));
+	}
+
+	iterator insert(iterator pos, std::initializer_list<T> ilist)
+	{
+		return (insert(pos, ilist.begin(), ilist.end()));
+	}
+
+	//
+	void pop_front()
+	{
+		erase(begin());
+	}
+
+	void pop_back()
+	{
+		erase(end() - 1);
+	}
+	//erase
+	iterator erase(iterator pos) 
+	{
+		return erase_dispatch(pos,pos+1);
+	}
+
+	iterator erase(iterator first, iterator last)
+	{
+		
+		erase_dispatch(first,last);
+		return last;
+	}
+	void clear()
+	{
+		free();
+		_begin._node = 0; _end._node = 0;
+		_begin._first = _begin._last = _begin._cur = 0;
+		_end._last = _end._last = _end._cur = 0;
+	}
+
+	void resize(size_type count)
+	{
+		if (count < size()) 
+		{
+			size_type elem_erase = size() - count;
+			erase(_end - elem_erase, _end);
+		}
+		else if (count>size())
+		{
+			size_type elem_erase = count - size();
+			insert(_end, elem_erase, T());
+		}
+	}
+
+	void resize(size_type count, const value_type& value)
+	{
+		
+	}
 	protected:
 		//辅助函数，创建map
 		std::size_t deque_buf_size(std::size_t n) { return __deque_buf_size(n); }
@@ -549,10 +602,19 @@ class deque {
 		void reserve_map_at_front(size_type nodes_to_add = 1);
 		void reallocate_map(size_type nodes_to_add, bool add_at_front);
 
+		iterator insert_dispatch(iterator pos, size_type count, const T&value);
 		iterator insert_at_begin(iterator pos, size_type count, const T& value);
 		iterator insert_at_end(iterator pos, size_type count, const T& value);
 
+		template<class integer>
+		iterator insert_aux(iterator pos, integer count, integer value, std::true_type);
+		template<class InputIter>
+		iterator insert_aux(iterator pos, InputIter first, InputIter last, std::false_type);
+
 	
+		iterator erase_dispatch(iterator first,iterator last);
+		iterator erase_at_end(iterator pos);
+		iterator erase_at_begin(iterator pos);
 		void free()
 		{
 			if (_begin._cur)
@@ -737,6 +799,24 @@ class deque {
 		//--_begin;
 	}
 
+	template < class T,class alloc=MyCppSTL::allocator<T> >
+	typename deque<T,alloc>::iterator deque<T,alloc>::insert_dispatch(iterator pos, size_type count, const T&value)
+	{
+		size_type index = pos - _begin;    //计算当前要插入的位置离哪一端近
+		bool at_front = (index > (size() / 2)) ? false : true;
+
+		//移动前部/后部
+		if (at_front)
+		{
+			return insert_at_begin(pos, count, value);
+		}
+		else
+		{
+			return insert_at_end(pos, count, value);
+		}
+		
+	}
+
 	template<class T,class alloc=MyCppSTL::allocator<T>>
 	typename deque<T,alloc>::iterator deque<T,alloc>::insert_at_begin(iterator pos, size_type count, const T& value)
 	{
@@ -751,9 +831,6 @@ class deque {
 		
 		auto _copy_begin = MyCppSTL::copy(it1, it2, _begin); //copy
 		uninitialized_fill_n(_copy_begin,count, value);
-
-		for (; _begin != _end; ++_begin)
-			std::cout << *_begin << " ";
 		return pos;
 
 	}
@@ -772,15 +849,82 @@ class deque {
 		auto it2 = _end - count;
 		auto _copy_begin = MyCppSTL::copy_backward(it1, it2, _end);
 		uninitialized_fill_n(it1, count, value);
-
-		/*for (; _begin != _end; ++_begin)
-		{
-			std::cout << *_begin << " ";
-		}
-		*/
-
 		return pos;
 	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class integer>
+	typename deque<T, alloc>::iterator deque<T, alloc>::insert_aux(iterator pos, integer count, integer value, std::true_type)
+	{
+		return (insert_dispatch(pos, count, value));
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class InputIter>
+	typename deque<T, alloc>::iterator deque<T, alloc>::insert_aux(iterator pos, InputIter first, InputIter last, std::false_type)
+	{
+		difference_type distance = pos - _begin;
+		for (; first != last;)
+		{
+			insert_dispatch(_begin+distance, 1 ,*first);
+			++first;
+			++distance;
+		
+		}
+		return pos-(last-first);
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	typename deque<T, alloc>::iterator deque<T, alloc>::erase_dispatch(iterator first, iterator last)
+	{
+		size_type distance = (size_type)(first - _begin);
+		bool at_front = (distance > (size() / 2)) ? false : true;
+		if (at_front)
+		{
+			for (; first != last;)
+			{
+				erase_at_begin(first);
+				++first;
+			}
+			return first;
+		}
+		else
+		{
+			auto tmp = first;
+			for (; first != last;)
+			{
+				erase_at_end(tmp);
+				++first;
+			}
+			return first;
+		}
+	}
+
+	template<class T,class alloc=MyCppSTL::allocator<T>>
+	typename deque<T, alloc>::iterator deque<T, alloc>::erase_at_begin(iterator pos)
+	{
+		auto tmp = _begin;
+		if(pos!=_begin)
+		   MyCppSTL::copy_backward(_begin, pos, pos+1);
+		++_begin;
+		alloc::destroy(tmp._cur);
+		return pos;
+	}
+
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	typename deque<T, alloc>::iterator deque<T, alloc>::erase_at_end(iterator pos)
+	{
+		auto tmp = _end-1;
+		if (pos != _end-1)
+			MyCppSTL::copy(pos+1, _end, pos);
+		--_end;
+		alloc::destroy(tmp._cur);
+		return pos;
+	}
+
+
+
+
 
 
 
