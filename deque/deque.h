@@ -9,8 +9,6 @@
 #include<initializer_list>
 
 
-#include<iostream>
-
 namespace MyCppSTL
 {
 
@@ -304,6 +302,26 @@ class deque_iterator :public deque_const_iterator<T>
 };  //end of iterator
 
 /***************/
+template<class T, class alloc> class deque;
+
+template<class T, class alloc>
+bool operator==(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
+template<class T, class alloc>
+bool operator!=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
+template<class T, class alloc>
+bool operator>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
+template<class T, class alloc>
+bool operator<(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
+template<class T, class alloc>
+bool operator<=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
+template<class T, class alloc>
+bool operator>=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+
 //deque模板
 template<class T,class alloc=MyCppSTL::allocator<T>>
 class deque {
@@ -323,6 +341,13 @@ class deque {
 		
 		typedef MyCppSTL::allocator<pointer>  map_alloc;
 		enum {NODESIZE= _NODE_SIZE};
+
+		friend bool operator==<>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+		friend bool operator!=<>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+		friend bool operator><>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+		friend bool operator< <>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+		friend bool operator<= <>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
+		friend bool operator>= <>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs);
 	public:
 		//构造函数
 	explicit deque()  //默认构造函数 
@@ -485,12 +510,6 @@ class deque {
 			
 		}
 	}
-
-	void push_back(T&& value)
-	{
-		
-	}
-
 	void push_front(const T& value)
 	{
 		if (_begin._cur != _begin._first)
@@ -560,7 +579,12 @@ class deque {
 
 	void resize(size_type count)
 	{
-		if (count < size()) 
+		resize(count, T());
+	}
+
+	void resize(size_type count, const value_type& value)
+	{
+		if (count < size())
 		{
 			size_type elem_erase = size() - count;
 			erase(_end - elem_erase, _end);
@@ -568,13 +592,21 @@ class deque {
 		else if (count>size())
 		{
 			size_type elem_erase = count - size();
-			insert(_end, elem_erase, T());
+			insert(_end, elem_erase,value);
 		}
 	}
 
-	void resize(size_type count, const value_type& value)
+	void swap(my_deque&rhs)
 	{
-		
+		auto tmp = *this;
+		_begin = rhs._begin;
+		_end = rhs._end;
+		_map = rhs._map;
+		_map_size = rhs._map_size;
+		rhs._begin = tmp._begin;
+		rhs._end = tmp._end;
+		rhs._map = tmp._map;
+		rhs._map_size = tmp._map_size;
 	}
 	protected:
 		//辅助函数，创建map
@@ -643,7 +675,7 @@ class deque {
 
 	//创建map
 
-    template<class T, class alloc = MyCppSTL::allocator<T>>
+    template<class T, class alloc >
 	void deque<T, alloc>::create_map(size_type elem_num)
 	{
 		//计算需要多个map节点
@@ -669,7 +701,7 @@ class deque {
 		_end._cur = _end._first + elem_num%deque_buf_size(sizeof(value_type));
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	void deque<T, alloc>::create_map_and_node(size_type count, value_type value)
 	{
 		create_map(count);    //构造map节点，并初始化成员
@@ -682,14 +714,14 @@ class deque {
 	}
 	
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class Integer>
 	inline void deque<T,alloc>::initialize_dispatch(Integer count, Integer value, std::true_type)
 	{
 		create_map_and_node(count, value);
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class InputIter>      //是迭代器
 	inline void deque<T, alloc>::initialize_dispatch(InputIter first, InputIter last,std::false_type)
 	{
@@ -699,7 +731,7 @@ class deque {
 		range_initialize(first, last, Cat());   //调用相应的迭代器
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class ForwardIter>
 	void deque<T, alloc>::range_initialize(ForwardIter first, ForwardIter last, MyCppSTL::forward_iterator_tag)
 	{
@@ -718,7 +750,7 @@ class deque {
 		}
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class InputIter>
 	void deque<T, alloc>::range_initialize(InputIter first, InputIter last, MyCppSTL::input_iterator_tag)
 	{
@@ -852,14 +884,14 @@ class deque {
 		return pos;
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class integer>
 	typename deque<T, alloc>::iterator deque<T, alloc>::insert_aux(iterator pos, integer count, integer value, std::true_type)
 	{
 		return (insert_dispatch(pos, count, value));
 	}
 
-	template<class T,class alloc=MyCppSTL::allocator<T>>
+	template<class T,class alloc>
 	template<class InputIter>
 	typename deque<T, alloc>::iterator deque<T, alloc>::insert_aux(iterator pos, InputIter first, InputIter last, std::false_type)
 	{
@@ -923,9 +955,48 @@ class deque {
 	}
 
 
+	//非成员函数
 
+	template<class T, class alloc=MyCppSTL::allocator<T>>
+	bool operator==(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		if (lhs.size() != rhs.size())return false;
+		auto first = lhs.begin();
+		auto second = rhs.begin();
+		for (; first!=lhs.end();++first,++second)
+		{
+			if (*first != *second)return false;
+		}
 
+		return true;
+	}
 
+	template<class T, class alloc=MyCppSTL::allocator<T>>
+	bool operator!=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		return (!(lhs == rhs));
+	}
+
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	bool operator<(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		return (lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end()));
+	}
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	bool operator>(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		return (rhs < lhs);
+	}
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	bool operator<=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		return (!(lhs>rhs));
+	}
+	template<class T, class alloc = MyCppSTL::allocator<T>>
+	bool operator>=(const deque<T, alloc>&lhs, const deque<T, alloc>&rhs)
+	{
+		return !(lhs < rhs);
+	}
 
 
 }  
@@ -933,4 +1004,4 @@ class deque {
 
 
 
-#endif 
+#endif  //end of deque
