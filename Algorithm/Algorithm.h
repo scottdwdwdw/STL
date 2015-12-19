@@ -299,7 +299,7 @@ namespace MyCppSTL
 		return _copy_backward_dispatch<BidirectionalIterator1, BidirectionalIterator2>()(first, last, dest);
 	}
 
-	//泛化版本，决定是调用random版还是调用bidrection版本
+	//泛化版本，决定是调用random版还是调用bidrection版本,目的是为了提高效率
 	template<class InputIterator, class OutputIterator>
 	struct _copy_backward_dispatch
 	{
@@ -311,7 +311,7 @@ namespace MyCppSTL
 		}
 	};
 
-	//特化版本,
+	//特化版本,针对POD类型数据
 	template<class T>
 	struct _copy_backward_dispatch<T*, T*>
 	{
@@ -341,6 +341,7 @@ namespace MyCppSTL
 	inline BidirectionalIterator2 _copy_backward_aux(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 dest,bidirectional_iterator_tag)
 	{
 		--last;
+		--dest;
 		for (; last!=first; --last, --dest)
 		{
 			*dest = *last;
@@ -376,10 +377,104 @@ namespace MyCppSTL
 		return _copy_backward_aux(first, last, dest, random_access_iterator_tag);
 	}
 
-	
+	//堆相关
+	//make_heap，push_heap,pop_heap,sort_heap
+	//
 
-	
+	//堆性质的维护
+	//认为其左堆和右堆均是最大堆
+	template<class RandomAccessIterator>
+	void __build_heap_aux(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator root_node)
+	{
+		auto index = root_node - first;
+		std::ptrdiff_t largest = index;
+		auto left_index = index * 2 + 1;
+		auto right_index = index * 2 + 2;
+		auto size = last - first;
+		if ((left_index < size) && (*root_node < *(first + left_index)))
+		{
+			largest = left_index;
+		}
+		if ((right_index < size) &&(*(first + largest) < *(first + right_index)))
+		{
+			largest = right_index;
+		}
+		if (largest!=index)
+		{
+			auto tmp = *root_node;
+			*root_node = *(first + largest);
+			*(first + largest) = tmp;
+			__build_heap_aux(first, last, first + largest);  //递归调用,因为交换值之后就破坏了堆的特性
+		}
+	}
 
+
+	//建立堆
+	template<class RandomAccessIterator>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		auto size = last - first;
+		if (size < 2)return;
+		auto root_index = size / 2 - 1; //得到开始键堆的起始根节点
+		while (true)
+		{
+			__build_heap_aux(first, last, first + root_index);
+			if (root_index == 0)break;
+			--root_index;
+		}
+	}
+
+	//push_heap,将元素插入堆中
+	//前提是已经把元素插入到底层容器的尾端
+	//往上溯源即可
+	template<class RandomAccessIterator>
+	void push_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		__push_heap(first, last);
+	}
+
+	template<class RandomAccessIterator>
+	void __push_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		//找到父节点
+		auto size = last - first;
+		auto parent_index = (size - 2) / 2;
+		while (true)
+		{
+			__build_heap_aux(first, last, first + parent_index);
+			if (parent_index == 0)break;
+			parent_index = (parent_index - 1) / 2;
+		}
+		
+	}
+
+	//pop_heap
+	//取出根节点放到容器的末尾
+	template< class RandomAccessIterator >
+	void pop_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		__pop_heap_aux(first, last);
+	}
+
+	template< class RandomAccessIterator >
+	void __pop_heap_aux(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		auto tmp = *first;
+		*first = *(last - 1);
+		__build_heap_aux(first, last, first);
+		*(last - 1) = tmp;
+
+	}
+
+	//sort_heap，堆排序
+	template<class RandomAccessIterator>
+	void sort_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		while (first != last)
+		{
+			MyCppSTL::pop_heap(first, last--);
+		}
+	}
 }
 
 
