@@ -133,51 +133,64 @@ namespace MyCppSTL
 		
 		typedef forward_list_const_iterator<T> const_iterator;
 		typedef forward_list_iterator<T>  iterator;
+		typedef forward_list<T, alloc> _MyList;
 		typedef MyCppSTL::allocator<_node<T>> _node_alloc;      //节点分配器
+
 
 		typedef _node<T>* _nodePtr;
 	public:
 		explicit forward_list()
 		{
 			cur = creat_node();
-			head = tail = cur;
+			head = cur;
+			head->_next = NULL;
 		}
 		forward_list(size_type count, const T&value)
 		{
-			creat_node(count, value, head, tail);
+			creat_node(count, value, head);
 		}
 		explicit forward_list(size_type count)
 		{
-			creat_node(count, T(), head, tail);
+			creat_node(count, T(), head);
 		}
 		template<class InputIt>
 		forward_list(InputIt first, InputIt last)
 		{
-			_forward_list_dispatch(first, last, head, tail, std::is_integral<InputIt>::type());
+			_forward_list_dispatch(first, last, head,std::is_integral<InputIt>::type());
 		}
 		//copy construct
 		forward_list(const forward_list<T>&other)
 		{
-			_forward_list_dispatch(other.begin(), other.end(), head, tail, std::false_type());
+			_forward_list_dispatch(other.begin(), other.end(), head,std::false_type());
 		}
 		forward_list(const std::initializer_list<int>&other)
 		{
-			_forward_list_dispatch(other.begin(), other.end(), head, tail, std::false_type());
+			_forward_list_dispatch(other.begin(), other.end(), head,std::false_type());
 		}
-
+		//
+		_MyList operator=(const _MyList&other)
+		{
+			if (this != &other)
+			{
+				destroy_all(head); //allocate的设计缺陷？？？
+				_forward_list_dispatch(other.begin(), other.end(), head, std::false_type());
+			}
+			return *this;
+		}
+		//_MyList 
 		//析构
 		~forward_list()
 		{
-			
+			destroy_all(head);
 		}
 		//迭代器
-		iterator before_begin() { return iterator(--head); }
-		iterator begin(){return iterator(head);}
-		const_iterator begin() const{return const_iterator(head);}
-		const_iterator cbegin() const{return const_iterator(head);}
-		iterator end(){return iterator(tail);}
-		const_iterator end() const { return const_iterator(tail); }
-		const_iterator cend() const { return const_iterator(tail); }
+		iterator before_begin() { return iterator(head); }
+		iterator begin(){return iterator(head->_next);}
+		const_iterator begin() const{return const_iterator(head->_next);}
+		const_iterator cbegin() const{return const_iterator(head->_next);}
+		iterator end(){return iterator();}
+		const_iterator end() const { return const_iterator(); }
+		const_iterator cend() const { return const_iterator(); }
 		//辅助函数
 	private: 
 		_nodePtr creat_node()//构造链表节点
@@ -191,39 +204,49 @@ namespace MyCppSTL
 			MyCppSTL::construct(&(tmp->data), value);
 			return tmp;
 		}
-		void destroy_node(_nodePtr node)
+		void destroy_node(_nodePtr &node)
 		{
 			_node_alloc::destroy(node);
 			_node_alloc::deallocate(node);
 		}
-		_nodePtr creat_node(size_type count, const T&value,_nodePtr& head,_nodePtr& tail)
+		void destroy_all(_nodePtr&head)
 		{
-			_nodePtr head_tmp = creat_node(value);
+			auto before_head = head;
+			head = head->_next;
+			auto tmp = head;
+			while (tmp != NULL)
+			{
+				tmp = tmp->_next;
+				destroy_node(head);
+				
+				head = tmp;
+			}
+			_node_alloc::deallocate(before_head);
+		}
+		_nodePtr creat_node(size_type count, const T&value,_nodePtr& head)
+		{
+			_nodePtr head_tmp = creat_node();
 			_nodePtr cur_tmp = head_tmp;
 			_nodePtr tmp = cur_tmp;
-			while (--count)
+			while (count--)
 			{
 				tmp = creat_node(value);
 				cur_tmp->_next = tmp;
 				cur_tmp = tmp;
 			}
-			tmp = creat_node();   //
-			cur_tmp->_next = tmp;
-			tmp->_next = NULL;  //这里是因为在分配空间的时候，分配器也是一个链表，内存池
+			tmp->_next = NULL; 
 			head = head_tmp;
-			tail = tmp;
-
 			return head_tmp;
 		}
 		template<class Integer>
-		void _forward_list_dispatch(Integer count, Integer value, _nodePtr& head,_nodePtr& tail,std::true_type)
+		void _forward_list_dispatch(Integer count, Integer value, _nodePtr& head,std::true_type)
 		{
 			creat_node(count, value, head, tail);
 		}
 		template<class InputIter>
-		void _forward_list_dispatch(InputIter first, InputIter last, _nodePtr& head, _nodePtr& tail,std::false_type)
+		void _forward_list_dispatch(InputIter first, InputIter last, _nodePtr& head,std::false_type)
 		{
-			_nodePtr head_tmp = creat_node(*first++);
+			_nodePtr head_tmp = creat_node();
 			_nodePtr cur_tmp = head_tmp;
 			_nodePtr tmp = cur_tmp;
 			for(; first != last; ++first)
@@ -232,16 +255,12 @@ namespace MyCppSTL
 				cur_tmp->_next = tmp;
 				cur_tmp = tmp;
 			}
-			tmp = creat_node();   //
-			cur_tmp->_next = tmp;
 			tmp->_next = NULL; 
 			head = head_tmp;
-			tail = tmp;
 		}
 
 	private:
 		_nodePtr head;     
-		_nodePtr tail;
 		_nodePtr cur; //指向链表节点的指针
 
 	};
