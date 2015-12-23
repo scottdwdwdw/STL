@@ -7,6 +7,9 @@
 
 namespace MyCppSTL
 {
+
+	template<class T, class alloc>class forward_list; //前向声明
+
 	//链表节点
 	template<class T>
 	struct _node
@@ -20,6 +23,8 @@ namespace MyCppSTL
 	template<class T>
 	class forward_list_const_iterator:public iterator<MyCppSTL::forward_iterator_tag,T>
 	{
+	public:
+		friend forward_list<T, MyCppSTL::allocator<T>>;
 	public: //内嵌型别
 		typedef const T value_type;
 		typedef const T& reference;
@@ -101,6 +106,10 @@ namespace MyCppSTL
 			node = rhs.node;
 			return *this;
 		}
+		reference operator*()
+		{
+			return (reference)**(_MyBase*)this;
+		}
 		//迭代器操作
 		_MyIter&operator++()
 		{
@@ -167,17 +176,28 @@ namespace MyCppSTL
 		{
 			_forward_list_dispatch(other.begin(), other.end(), head,std::false_type());
 		}
-		//
+		
 		_MyList operator=(const _MyList&other)
 		{
 			if (this != &other)
 			{
-				destroy_all(head); //allocate的设计缺陷？？？
+				destroy_all(head); //
 				_forward_list_dispatch(other.begin(), other.end(), head, std::false_type());
 			}
 			return *this;
 		}
-		//_MyList 
+		_MyList operator=(_MyList&&other)
+		{
+			head = other.head;
+			cur = other.cur;
+			other.head = NULL;
+			other.cur = NULL;
+		}
+		_MyList &operator=(std::initializer_list<T> ilist)
+		{
+			_forward_list_dispatch(ilist.begin(), ilist.end(), std::false_type());
+			return *this;
+		}
 		//析构
 		~forward_list()
 		{
@@ -191,6 +211,55 @@ namespace MyCppSTL
 		iterator end(){return iterator();}
 		const_iterator end() const { return const_iterator(); }
 		const_iterator cend() const { return const_iterator(); }
+		//access
+		reference front()
+		{
+			return *begin();
+		}
+		const_reference front() const
+		{
+			return *begin();
+		}
+		bool empty() const
+		{
+			return (head->_next == NULL);
+		}
+		void clear()
+		{
+			destroy_all(head);
+		}
+		iterator insert_after(const_iterator pos, const T&value)
+		{
+			return insert_after_aux(pos, value);
+		}
+
+		/* 关于move语义。。。
+		iterator insert_after(const_iterator pos, T&&value)
+		{
+			return insert_after_aux(pos, value);
+		}
+		*/
+		iterator insert_after(const_iterator pos, size_type count, const T&value)
+		{
+			auto tmp = pos;
+			while (count--)
+			{
+				insert_after(pos, value);
+				pos++;
+			}
+			return iterator(tmp.node->_next);
+		}
+		template<class InputIt>
+		iterator insert_after(const_iterator pos, InputIt first, InputIt last)
+		{
+			return (insert_after_dispatch(pos, first, last, std::is_integral<InputIt>::type()));
+		}
+
+		iterator insert_after(const_iterator pos, std::initializer_list<T>ilist)
+		{
+			return (insert_after(pos, ilist.begin(), ilist.end()));
+		}
+
 		//辅助函数
 	private: 
 		_nodePtr creat_node()//构造链表节点
@@ -257,6 +326,37 @@ namespace MyCppSTL
 			}
 			tmp->_next = NULL; 
 			head = head_tmp;
+		}
+
+		iterator insert_after_aux(const_iterator pos, const T&value)
+		{
+			auto insert_node = creat_node(value);
+			insert_node->_next = pos.node->_next;
+			pos.node->_next = insert_node;
+			return iterator(pos.node->_next);
+		}
+		template<class InputIt>
+		iterator insert_after_dispatch(const_iterator pos, InputIt first, InputIt last,std::false_type)
+		{
+			auto tmp = pos;
+			for(; first != last; ++first)
+			{
+				insert_after_aux(pos, *first);
+				++pos;
+			}
+			return iterator(tmp.node->_next);
+		}
+
+		template<class Integral>
+		iterator insert_after_dispatch(const_iterator pos, Integral count, Integral value, std::true_type)
+		{
+			auto tmp = pos;
+			while (count--)
+			{
+				insert_after_aux(pos, value);
+				++pos;
+			}
+			return iterator(tmp.node->_next);
 		}
 
 	private:
