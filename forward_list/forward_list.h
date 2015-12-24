@@ -260,8 +260,100 @@ namespace MyCppSTL
 			return (insert_after(pos, ilist.begin(), ilist.end()));
 		}
 
+		void push_front(const T&value)
+		{
+			insert_after(before_begin(), value);
+		}
+
+		//move版本
+		/**/
+		iterator erase_after(const_iterator&pos)
+		{
+			auto tmp = pos.node->_next;
+			pos.node->_next = pos.node->_next->_next;
+			tmp->_next = NULL;
+			destroy_node(tmp);
+			return iterator(pos.node->_next);
+		}
+
+		iterator erase_after(const_iterator&first, const_iterator&last)
+		{
+			
+			for (;  first.node->_next!= last.node;)
+			{
+				erase_after(first);
+			}
+			return iterator(first.node);
+		}
+
+		void pop_front()
+		{
+			erase_after(before_begin());
+		}
+
+		size_type size()
+		{
+			size_type count = 0;
+			while (head->_next != NULL)
+			{
+				++count;
+			}
+			return(count);
+		}
+
+		void resize(size_t count,const value_type&value)
+		{
+			size_t len = 0;
+			auto it = before_begin();
+			for (; next(it)!=end() && len < count; ++it, ++len) 
+			{
+
+			}
+			if (len == count) //当前长度长于count
+			{
+				erase_after(it,end());
+			
+			}
+			else //长度大于count
+			{
+				while (len != count)
+				{
+					insert_after(it,value);
+					++it;
+					++len;
+				}
+			}
+		}
+
+		void resize(size_t count)
+		{
+			resize(count, T());
+		}
+
+		void swap(_MyList&other)
+		{
+			auto tmp = head;
+			auto tmp_cur = cur;
+			head = other.head;
+			cur = other.cur;
+			other.head = tmp;
+			other.cur = tmp_cur;
+		}
+		/*
+		template<class...Args>
+		iterator emplace_after(iterator pos, const Args&& ...args)
+		{
+			return insert_after_aux(pos, std::forward<Args>(args)...);
+		}
+		*/
 		//辅助函数
 	private: 
+
+		iterator next(iterator it)
+		{
+			return ++it;
+		}
+	
 		_nodePtr creat_node()//构造链表节点
 		{
 			_nodePtr node_tmp = _node_alloc::allocate();
