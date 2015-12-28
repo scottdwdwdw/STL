@@ -4,6 +4,7 @@
 #include"Allocator.h"
 #include"Iterator.h"
 #include<initializer_list>
+#include<type_traits>
 
 namespace MyCppSTL
 {
@@ -228,6 +229,8 @@ namespace MyCppSTL
 		{
 			destroy_all(head);
 		}
+
+		
 		iterator insert_after(const_iterator pos, const T&value)
 		{
 			return insert_after_aux(pos, value);
@@ -339,13 +342,19 @@ namespace MyCppSTL
 			other.head = tmp;
 			other.cur = tmp_cur;
 		}
-		/*
+		
 		template<class...Args>
-		iterator emplace_after(iterator pos, const Args&& ...args)
+		iterator emplace_after(iterator pos, Args&& ...args)
 		{
 			return insert_after_aux(pos, std::forward<Args>(args)...);
 		}
-		*/
+
+		template<class...Args>
+		iterator emplace_front(Args&&...args)
+		{
+			return insert_after_aux(before_begin(), std::forward<Args>(args)...);
+		}
+		
 		//¸¨Öúº¯Êý
 	private: 
 
