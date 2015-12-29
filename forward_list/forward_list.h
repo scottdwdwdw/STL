@@ -619,4 +619,55 @@ namespace MyCppSTL
 
 }// end of namespace
 
+
+//非成员函数
+template<class T>
+bool operator==(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	if (lhs.size() == rhs.size())
+	{
+		auto first = lhs.begin();
+		auto last = lhs.end();
+		auto first2 = rhs.begin();
+		auto last2 = rhs.end();
+		for (; (first != last) && (first2 != last2);)
+		{
+			if (*first != *last)return false;
+		}
+		return true;
+	}
+	return false;
+
+}
+
+template<class T>
+bool operator!=(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	return !(lhs == rhs);
+}
+
+template<class T>
+bool operator<(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	return MyCppSTL::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+
+template<class T>
+bool operator>(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	return (rhs < lhs);
+}
+
+template<class T>
+bool operator<=(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	return !(lhs>rhs);
+}
+
+template<class T>
+bool operator>=(const MyCppSTL::forward_list<T>&lhs, const MyCppSTL::forward_list<T>&rhs)
+{
+	return !(lhs < rhs);
+}
+
 #endif   //end of forward_list.h file
