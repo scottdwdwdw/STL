@@ -297,9 +297,12 @@ namespace MyCppSTL
 		size_type size()
 		{
 			size_type count = 0;
-			while (head->_next != NULL)
+			auto cur = head;
+			while (cur->_next != NULL)
 			{
 				++count;
+				cur = cur->_next;
+
 			}
 			return(count);
 		}
@@ -355,6 +358,151 @@ namespace MyCppSTL
 			return insert_after_aux(before_begin(), std::forward<Args>(args)...);
 		}
 		
+		
+		void merge(forward_list<T>&other)
+		{
+			if (this != &other)
+			{
+				iterator cur1 = before_begin();
+				iterator cur2 = other.before_begin();
+				iterator first1 = begin();
+				iterator first2 = other.begin();
+				for (; (first1 != end() && first2 != other.end()); )
+				{
+					if (*first1 > *first2)
+					{
+						insert_after(cur1, *first2);
+						cur2 = first2;
+						++first2;
+					}
+					else
+					{
+						cur1 = first1;
+						++first1;
+					}
+
+				}
+				if (first2 != other.end())insert_after(cur1, first2, other.end());
+			}
+		}
+
+		template<class Comp>
+		void merge(forward_list<T>&other, Comp comp)
+		{
+			if (this != &other)
+			{
+				iterator cur1 = before_begin();
+				iterator cur2 = other.before_begin();
+				iterator first1 = begin();
+				iterator first2 = other.begin();
+				for (; (first1 != end() && first2 != other.end()); )
+				{
+					if (!comp(*first1,*first2))
+					{
+						insert_after(cur1, *first2);
+						cur2 = first2;
+						++first2;
+					}
+					else
+					{
+						cur1 = first1;
+						++first1;
+					}
+
+				}
+				if (first2 != other.end())insert_after(cur1, first2, other.end());
+			}
+		}
+		
+		void splice_after(const_iterator pos, forward_list<T>&other, const_iterator it)
+		{
+			if (pos != it)
+			{
+				insert_after(pos, *it);
+				auto first = other.before_begin().node;
+				while (first->_next != it.node)
+				{
+					first = first->_next;
+				}
+				erase_after(const_iterator(first));
+
+			}
+
+		}
+
+		void splice_after(const_iterator pos, forward_list<T>&other)
+		{
+			if (this != &other)
+			{
+				insert_after(pos, other.begin(), other.end());
+				auto n = other.before_begin().node;
+				destroy_all(n);
+			}
+		}
+
+		void splice_after(const_iterator pos, forward_list& other, const_iterator first, const_iterator last)
+		{
+			if ((this != &other) && (!other.empty()))
+			{
+				insert_after(pos, first, last);
+				auto it = other.before_begin();
+				while (it.node->_next != first.node)
+				{
+					++it;
+				}
+				erase_after(it, last);
+			}
+		}
+
+		void remove(const T& value)
+		{
+			auto first = begin();
+			for (; first != end(); ++first)
+			{
+				if (first.node->_next->data == value)
+				{
+					erase_after(first);
+				}
+			}
+		}
+
+		void reverse()
+		{
+			if (size() <= 1)return;
+			_nodePtr pre = begin().node;
+			_nodePtr cur = pre->_next;
+			_nodePtr next =cur;
+			pre->_next = NULL;
+			while (cur != NULL)
+			{
+				next = cur->_next;
+				cur->_next = pre;
+				pre = cur;
+				cur = next;
+			}
+
+			head->_next = pre;
+		}
+
+		void unique()
+		{
+			_nodePtr cur = head->_next;
+			_nodePtr next = cur->_next;
+			while (next != NULL)
+			{
+				if (cur->data == next->data)
+				{
+					next = next->_next;
+					erase_after(iterator(cur));
+				}
+				else
+				{
+					cur = next;
+					next = next->_next;
+				}
+			}
+		}
+
 		//¸¨Öúº¯Êý
 	private: 
 
@@ -392,6 +540,7 @@ namespace MyCppSTL
 				head = tmp;
 			}
 			_node_alloc::deallocate(before_head);
+			before_head = NULL;
 		}
 		_nodePtr creat_node(size_type count, const T&value,_nodePtr& head)
 		{
