@@ -4,7 +4,7 @@
 #include"Allocator.h"
 #include"Iterator.h"
 #include"Algorithm.h"
-
+#include<initializer_list>
 
 namespace MyCppSTL
 {
@@ -27,7 +27,7 @@ namespace MyCppSTL
 		string_const_iterator(pointer p) :_p(p) {}
 		string_const_iterator(const _MyIter&other)  //copy
 		{
-			if (this != &other)
+			if (this != &other) 
 			{
 				_p = other._p;
 			}
@@ -106,6 +106,11 @@ namespace MyCppSTL
 		{
 			return !(*this == other);
 		}
+		bool operator<(_MyIter&other)
+		{
+			return (_p<other._p);
+		}
+
 	};
 
 
@@ -233,7 +238,7 @@ namespace MyCppSTL
 		string(size_type count, char value) //count value
 		{
 			allocate_block(count+1);   //分配空间
-			_finish = _start + count;
+			_finish = _start + count;  //由于uninitialized_fill是传值而不是引用，所以采用这种方法
 			uninitialized_fill(_start, _finish, value);  //
 			*_finish = char();
 		}
@@ -243,13 +248,169 @@ namespace MyCppSTL
 			{
 				std::out_of_range("out of range");
 			}
-			range_initializer(other._start + pos, other._start + pos+min(count,size()-pos));
+			range_initializer(other._start + pos, other._start + pos+min(count,other.size()-pos));
 		}
 
 		string(const char*s, size_type count)
 		{
 			range_initializer(s, s + count);
 		}
+
+		string(const char*s)
+		{
+			int count=0;
+			while(s[count++]!=NULL);  //
+			range_initializer(s,s+count-1);
+		}
+
+		template<class InputIter>
+		string(InputIter first,InputIter last)
+		{
+			string_aux(first,last,std::is_integral<InputIter>::type());  //指派辅助函数处理
+		}
+		//copy construct
+		string(const string&other)
+		{
+			if(this!=&other)
+			{
+				string_aux(other.begin(),other.end(),std::false_type());
+			}
+		}
+
+		//move construct
+		string(string&&other):_start(other._start),
+									_finish(other._finish),
+									_end_of_storage(other._end_of_storage)
+		{
+			other._start=other._finish=other._end_of_storage=0;
+		}
+
+		//initializer_list
+		string(std::initializer_list<char>clist)
+		{
+			string_aux(clist.begin(),clist.end(),std::false_type());
+		}
+
+		//copy operator
+
+		// string&operater=(const string&other)
+		// {
+		// 	if(this!=&other)
+		// 	{
+				
+		// 	}
+		// 	return *this;
+		// }
+		// string&operator=(string&&other)
+		// {
+		// 	if(this!=&other)
+		// 	{ 
+		// 		//要销毁原先的
+		// 		_start=other._start;
+		// 		_finish=other._finish;
+		// 		_end_of_storage=other._end_of_storage;
+		// 		other._start=NULL;
+		// 		other._finish=NULL;
+		// 		other._end_of_storage=NULL;;
+		// 	}
+		// 	return *this;
+		// }
+
+		// string&operator=(const char*s)
+		// {
+		// 	string tmp(s);
+		// 	*this=s; 
+		// 	return *this;
+		// }
+		// string&operator=(std::initializer_list<char> clist)
+		// {
+		// 	string tmp(clist);
+		// 	*this=tmp;
+		// 	return *this;
+		// }
+
+         //at
+		reference at(size_type pos)
+		{
+            check_size(pos);
+            return *(_start+pos);
+		}
+		const_reference at(size_type pos)const
+		{
+			check_size(pos);
+			return *(_start+pos);
+		}
+		//operator[]
+		reference operator[](size_type pos)
+		{
+			return *(_start+pos);
+		}
+		const_reference operator[](size_type pos) const
+		{
+			return *(_start + pos);
+		}
+		//
+		char front()
+		{
+			return *_start;
+		}
+		const char front() const
+		{
+			return *_start;
+		}
+		char back()
+		{
+			return *(_finish-1);
+		}
+		const char back() const
+		{
+			return *(_finish-1);
+		}
+
+		const char*data() const
+		{
+			return _start;
+		}
+		const char*c_str() const
+		{
+			return _start;
+		}
+
+        //capacity
+        bool empty()
+        {
+        	return (_start==_finish);
+        }
+
+        size_type max_size() const
+        {
+			return ((size_type(-1) / sizeof(char)) - 1);
+        }
+
+        size_type capacity() const
+        {
+        	return (_end_of_storage-_start);
+        }
+
+
+        void reserve(size_type new_cap=0) 
+        {
+        	if(new_cap>capacity())
+        	{
+        		auto _start_tmp=_start;
+        		auto _finish_tmp=_finish;
+        		auto _end_of_storage_tmp=_end_of_storage;
+        		allocate_block(new_cap);
+        		MyCppSTL::uninitialized_copy(_start_tmp,_finish_tmp,_start);
+				_finish += (_finish_tmp - _start_tmp);
+        		//销毁
+        		deallocate_block(_start_tmp,_end_of_storage_tmp-_start_tmp);
+        	}
+        	else if(new_cap<capacity())//移除
+        	{
+
+        	}
+        }
 
 		//迭代器
 		iterator begin() { return iterator(_start); }
@@ -262,15 +423,19 @@ namespace MyCppSTL
 		size_type size() const { return _finish - _start; }
 		//辅助函数
 	private:
+		void check_size(size_type pos) const
+		{
+			if(pos>=size())throw std::out_of_range("out of range");
+		}
 		void allocate_block(size_type n) //分配空间
 		{
 			_start = alloc::allocate(n);
 			_finish = _start;
 			_end_of_storage = _start + n;
 		}
-		void deallocate_block()        //释放空间
+		void deallocate_block(pointer begin,size_type count)        //释放空间
 		{
-			alloc::deallocate(_start, _end_of_storage - _start);
+			alloc::deallocate(begin, count);
 			
 		}
 		template<class Iterator>
@@ -279,7 +444,22 @@ namespace MyCppSTL
 			auto n = last - first;
 			allocate_block(n+1); //分配空间
 			MyCppSTL::uninitialized_copy(first, last, _start);
+			_finish+=n;
 			*_finish = char();   //添加结束符
+		}
+
+		template<class Integral>   //是整数
+		void string_aux(Integral count,Integral value,std::true_type)
+		{
+            allocate_block(count+1);   //分配空间
+			_finish = _start + count;  //由于uninitialized_fill是传值而不是引用，所以采用这种方法
+			uninitialized_fill(_start, _finish, value);  //
+			*_finish = char();
+		}
+		template<class InputIter>
+		void string_aux(InputIter first,InputIter last,std::false_type)
+		{
+			range_initializer(first,last);
 		}
 	};  // end-string
 
