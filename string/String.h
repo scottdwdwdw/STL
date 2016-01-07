@@ -392,7 +392,7 @@ namespace MyCppSTL
         	return (_end_of_storage-_start);
         }
 
-
+        //如果比当前容量小，就不分配
         void reserve(size_type new_cap=0) 
         {
         	if(new_cap>capacity())
@@ -406,11 +406,76 @@ namespace MyCppSTL
         		//销毁
         		deallocate_block(_start_tmp,_end_of_storage_tmp-_start_tmp);
         	}
-        	else if(new_cap<capacity())//移除
-        	{
-
-        	}
+        	
         }
+        void shrink_to_fit()
+        {
+        	auto _end_of_storage_tmp=_end_of_storage;
+        	_end_of_storage=_finish+1;
+			deallocate_block(_end_of_storage,_end_of_storage_tmp-_end_of_storage);
+        }
+
+
+        //operation
+        string&erase(size_type index=0,size_type count=npos)
+        {
+              auto end=min(count,size()-index);
+              for(size_type i=0;i<end;++i)
+              {
+              	 MyCppSTL::copy(_start+index+1,_finish,_start+index);
+              }
+              _finish-=count;
+              return *this;
+        }
+
+        iterator erase(iterator pos)
+        {
+        	auto index=pos-begin();
+        	erase(index,1);
+        	return pos;
+        }
+
+        const_iterator erase(const_iterator pos)
+        {
+        	auto index=pos-cbegin();
+        	erase(index,1);
+        	return pos;
+        }
+
+        iterator erase(iterator first,iterator last)
+        {
+        	auto count=last-first;
+        	while(count--)
+        	{
+        		first=erase(first);
+        	}
+        	return first;
+        }
+        const_iterator erase(const_iterator first,const_iterator last)
+        {
+        	auto count=last-first;
+        	while(count--)
+        	{
+        		first=erase(first);
+        	}
+        	return first;
+        }
+
+        void clear()
+        {
+        	erase(begin(),end());
+        }
+
+        string&insert(size_type pos,size_type count,char ch)
+        {
+
+        }
+
+        iterator insert(iterator pos, char ch)
+        {
+        	
+        }
+
 
 		//迭代器
 		iterator begin() { return iterator(_start); }
