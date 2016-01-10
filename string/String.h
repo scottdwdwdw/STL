@@ -8,7 +8,7 @@
 
 namespace MyCppSTL
 {
-
+//#define max(a,b) ((a)>(b))?(a):(b)
 
 	class string_const_iterator:public iterator<MyCppSTL::random_access_iterator_tag,char>
 	{
@@ -466,16 +466,84 @@ namespace MyCppSTL
         	erase(begin(),end());
         }
 
-        string&insert(size_type pos,size_type count,char ch)
+		
+        iterator insert(iterator pos, size_type count, char ch )
         {
-
+        	if(count!=0)
+        	{
+				pointer _pos = _start + (pos - begin());
+        		if(size_type(_end_of_storage-_finish)>=(count+1))//有空间
+        		{
+        			//事实上，数据是char,是POD，所以可以省略构造函数
+        			//MyCppSTL::copy_backward(_pos,_finish,_pos+count);
+					copy_back(_finish - 1, _pos, _finish + count-1);
+					_finish += count;
+					assign(_pos, _pos + count, ch);
+					*_finish=char();
+					return iterator(_pos);
+        		}
+        		else  //空间不够
+        		{
+        			auto _old_size = capacity();
+        			auto _new_size=_old_size+2*count+1; //重新分配空间
+        			auto _old_start=_start;
+        			auto _old_finish=_finish;
+        			allocate_block(_new_size);
+        			MyCppSTL::uninitialized_copy(_old_start,_old_finish,_start);
+        			_finish+=(_old_finish-_old_start);
+					_pos = _start+(_pos - _old_start);
+			  		copy_back(_finish - 1, _pos, _finish + count-1);
+					_finish += count;
+					assign(_pos, _pos + count, ch);
+					*_finish=char();
+					return iterator(_pos);
+        		}
+        	}
+        	return pos;
         }
 
-        iterator insert(iterator pos, char ch)
+        iterator insert( iterator pos, char ch)
         {
-        	
+        	return insert(pos,1,ch);
         }
 
+        template<class InputIt>
+        void insert(iterator pos,InputIt first,InputIt last )
+        {
+        	insert_aux(pos,first,last,std::is_integral<InputIt>::type());
+        }
+
+        iterator insert( iterator pos, std::initializer_list<char> ilist )
+        {
+        	return insert_aux(pos,ilist.begin(),ilist.end(),std::false_type());
+        }
+
+        void push_back(char ch)
+        {
+        	insert(end(),ch);
+        }
+
+        void pop_back()
+        {
+        	erase(end()-1);
+        }
+
+        string& append(size_type count,char ch)
+        {
+        	insert(end(),count,ch);
+        	return *this;
+        }
+
+        string& append(const string& str )
+        {
+        	insert(end(),str.begin(),str.end());
+			return *this;
+        }
+        string& append( const char* s,size_type count)
+        {
+        	insert(end(),s,s+count);
+        	return *this;
+        }
 
 		//迭代器
 		iterator begin() { return iterator(_start); }
@@ -526,6 +594,67 @@ namespace MyCppSTL
 		{
 			range_initializer(first,last);
 		}
+		//向后拷贝
+		void copy_back(pointer last,pointer first,pointer dest)
+		{
+			while (last >= first) //
+			{
+				*dest-- = *last--;
+			}
+		}
+		//赋值
+		void assign(pointer first, pointer last, char ch)
+		{
+			while (first != last)
+			{
+				*first++ = ch;
+			}
+		}
+
+		template<class InputIt>   //是迭代器
+        iterator insert_aux(iterator pos,InputIt first,InputIt last,std::false_type)
+        {
+        	pointer _pos = _start + (pos - begin());
+        	size_type count=(size_type)(last-first);
+        	if((count+1)<=(size_type)(_end_of_storage-_finish))
+        	{
+        		copy_back(_finish - 1, _pos, _finish + count-1);
+				_finish += count;
+				while(first!=last)
+				{
+					assign(_pos, _pos+1, *first++);
+					++_pos;
+				}
+				*_finish=char();
+				return iterator(_pos);
+        	}
+        	else
+        	{
+        		auto _old_size = capacity();
+        		auto _new_size=_old_size+2*count+1; //重新分配空间
+        		auto _old_start=_start;
+        		auto _old_finish=_finish;
+        		allocate_block(_new_size);
+        		MyCppSTL::uninitialized_copy(_old_start,_old_finish,_start);
+        		_finish+=(_old_finish-_old_start);
+				_pos = _start+(_pos - _old_start);
+			  	copy_back(_finish - 1, _pos, _finish + count-1);
+				_finish += count;
+				while(first!=last)
+				{
+					assign(_pos, _pos+1, *first++);
+					++_pos;
+				}
+				*_finish=char();
+				return iterator(_pos);
+        	}
+        }
+
+        template<class Integral>   //不是迭代器
+        iterator insert_aux(iterator pos,Integral count,Integral ch,std::true_type)
+        {
+        	return insert(pos,first,ch);
+        }
 	};  // end-string
 
 	const string::size_type string::npos =(string::size_type)-1;
