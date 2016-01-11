@@ -545,6 +545,132 @@ namespace MyCppSTL
         	return *this;
         }
 
+        string& append(const char* s)
+        {
+        	size_type count=0;
+        	int i=0;
+        	while(s[i++]!='\0')++count;
+        	return append(s,count);
+        }
+
+        template< class InputIt >
+        string& append(InputIt first, InputIt last)
+        {
+        	return append_aux(first,last,std::is_integral<InputIt>::type());
+        }
+
+        string& append( std::initializer_list<char> ilist )
+        {
+        	return append(ilist.begin(),ilist.end());
+        }
+
+        string& operator+=(const string& str)
+        {
+        	return append(str.begin(),str.end());
+        }
+
+        string& operator+=(char ch)
+        {
+        	return append(1,ch);
+        }
+
+        string& operator+=(const char* s )
+        {
+        	return append(s);
+        }
+
+        string& operator+=(std::initializer_list<char>ilist)
+        {
+        	return append(ilist);
+        }
+
+        string& replace( size_type pos, size_type count, char ch )
+        {
+        	if(pos>size())throw std::out_of_range("out of range");
+        	if((size_type)(size()-pos)<count)erase(begin()+pos,end());
+        	else
+        	{
+        		erase(begin()+pos,begin()+(pos+count));
+        	}
+        	insert(begin()+pos,count,ch);
+        	return *this;
+        }
+
+        string& replace( size_type pos, size_type count,const string& str)
+        {
+        	int i=0;
+        	while(count--)
+        	{
+        		replace(pos,1,str[i]);
+        		++pos;++i;
+        	}
+        	return *this;
+        }
+
+        string& replace(size_type pos,size_type count,const string& str,size_type pos2,size_type count2)
+        {
+        	if(pos>size())throw std::out_of_range("out of range");
+        	if(pos2>str.size())throw std::out_of_range("out of range");
+        	if(size_type(size()-pos)<count)erase(begin()+pos,end());
+        	else erase(begin()+pos,begin()+(pos+count));
+        	insert(begin()+pos,str.begin()+pos2,str.begin()+pos2+count2);
+        	return *this;
+        }
+
+        template< class InputIt >
+        string& replace(iterator first, iterator last,InputIt first2, InputIt last2)
+        {
+        	return replace_aux(first,last,first2,last2,std::is_integral<InputIt>::type());
+        }
+
+        string substr( size_type pos = 0,size_type count = npos ) const
+        {
+        	if(count>size())count=size();
+        	return string(_start+pos,_start+pos+count);
+        }
+        size_type copy( char* dest,size_type count,size_type pos = 0) const
+        {
+        	if(pos>size())throw std::out_of_range("out of range");
+        	size_type len=min(size()-pos,count);
+        	for(size_type i=0;i<len;++i)
+        	{
+        		dest[i]=*(_start+pos+i);
+        	}
+        	return len;
+        }
+
+        void resize(size_type count)
+        {
+        	resize(count,char());
+        }
+
+        void resize( size_type count, char ch)
+        {
+        	if(count>size())
+        	{
+        		int addition=count-size();
+        		append(addition,ch);
+        	}
+        	else
+        	{
+        		int erase_num=size()-count;
+        		erase(begin()+count,end());
+        	}
+        }
+
+        void swap(string& other)
+        {
+        	auto tmp_start=_start;
+        	auto tmp_finish=_finish;
+        	auto tmp_end_of_storage=_end_of_storage;
+        	_start=other._start;
+        	_finish=other._finish;
+        	_end_of_storage=other._end_of_storage;
+        	other._start=tmp_start;
+        	other._finish=tmp_finish;
+        	other._end_of_storage=tmp_end_of_storage;
+        }
+
 		//迭代器
 		iterator begin() { return iterator(_start); }
 		const_iterator begin()const { return const_iterator(_start); }
@@ -655,6 +781,42 @@ namespace MyCppSTL
         {
         	return insert(pos,first,ch);
         }
+
+         template< class InputIt >  //是迭代器
+         string& append_aux(InputIt first, InputIt last,std::false_type)
+         {
+         	while(first!=last)
+         	{
+         		append(1,*first);
+         		++first;
+         	}
+
+         	return *this;
+         }
+
+         template< class Integral >  //不是迭代器
+         string& append_aux(Integral count , Integral ch,std::true_type)
+         {
+         	insert(end(),count,ch);
+        	return *this;
+         }
+
+        template< class InputIt >  //是迭代器
+        string& replace_aux(iterator first, iterator last,InputIt first2, InputIt last2,std::false_type)
+        {
+        	erase(first,last);
+        	insert(first,first2,last2);
+			return *this;
+        }
+
+        template< class Integral >  //不是迭代器
+        string& replace_aux(iterator first, iterator last,Integral count, Integral ch,std::true_type)
+        {
+        	erase(first,last);
+        	insert(first,count,ch);
+			return *this;
+        }
+
 	};  // end-string
 
 	const string::size_type string::npos =(string::size_type)-1;
