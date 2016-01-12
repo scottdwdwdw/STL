@@ -671,6 +671,42 @@ namespace MyCppSTL
         	other._end_of_storage=tmp_end_of_storage;
         }
 
+        //search
+        size_type find(const char* s,size_type pos,size_type count) const
+        {
+        	if((pos+count)>size())return npos;
+        	else
+        	{
+        		pointer res_it=MyCppSTL::search(_start,_finish,s,s+count);
+        		return (res_it!=_finish?res_it-_start:npos);
+        	}
+        }
+
+        size_type find( const string& str, size_type pos = 0 ) const
+        {
+        	return find(&str[0],pos,str.size());
+        }
+
+        size_type find( const char* s, size_type pos = 0 ) const   //s terminal '\n'
+        {
+        	size_type count=0;
+        	while(s[count++]!=0);
+            return find(s,pos,count);
+        }
+
+        size_type rfind( const char* s, size_type pos,size_type count) const
+        {
+        	size_type len=size();
+        	if(count>len)return npos;
+        	else if(count==0)return min(pos,len);
+        	else
+        	{
+        		pointer res_it=rsearch(_start,_finish,s,s+count);
+        		return (res_it==(_start-1))?npos:res_it-_start;
+				
+        	}
+        }
+
 		//µü´úÆ÷
 		iterator begin() { return iterator(_start); }
 		const_iterator begin()const { return const_iterator(_start); }
@@ -815,6 +851,27 @@ namespace MyCppSTL
         	erase(first,last);
         	insert(first,count,ch);
 			return *this;
+        }
+
+        template<class RandomAccessIterator1,class RandomAccessIterator2>  //ÄæÐòËÑË÷ [first1,last1),																			
+        RandomAccessIterator1 rsearch(RandomAccessIterator1 first1,RandomAccessIterator1 last1, 	//[s_first,s_last)
+        	              RandomAccessIterator2 s_first,RandomAccessIterator2 s_last) const
+        {
+        	--last1;
+        	--s_last;
+            --first1;
+			--s_first;
+        	for(;;--last1)
+        	{
+        		RandomAccessIterator1 it = last1;
+        		for(RandomAccessIterator2 s_it=s_last;;--s_it,--it)
+        		{
+        			if(s_it==s_first)return (last1-(s_last-s_first)+1);   //empty or find
+        			if(it==first1)return first1;          //no such substr
+        			if(!(*it==*s_it))break;
+        		}
+        	}
+
         }
 
 	};  // end-string
