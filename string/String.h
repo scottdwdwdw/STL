@@ -206,9 +206,16 @@ namespace MyCppSTL
 
 	};
 
-
+/**
+*   string 的定义
+*
+*/
 	class string
 	{
+
+	//友元函数声明
+	public:
+		friend string operator+(string&,string&);
 	public:
 		typedef char         value_type;
 		typedef char*        pointer;
@@ -707,6 +714,156 @@ namespace MyCppSTL
         	}
         }
 
+        size_type rfind(const char*s,size_type pos=npos) const
+        {
+        	size_type count =0;
+        	while(s[count]!='\0')++count;
+        	return rfind(s,pos,count);  //从string的最后一个字符开始查找
+        }
+
+        size_type rfind(char ch,size_type pos=npos) const
+        {
+        	char temp=ch;
+        	return rfind(&temp,pos,1);
+        }
+
+        size_type rfind( const string& str, size_type pos = npos ) const
+        {
+        	return rfind(&str[0],pos,str.size());
+        }
+
+        size_type find_first_of( const char* s, size_type pos, size_type count) const
+        {
+        	if(pos>size())return npos;
+        	else if(count==0)return min(pos,size());  //
+        	for(size_type i=pos;i<size();++i)
+        	{
+        		for(size_type j=0;j<count;++j)
+        		{
+        			if(_start[i]==s[j])return i;
+        		}
+        	}
+
+        	return npos;  //没找到
+        }
+
+        size_type find_first_of( const char* s, size_type pos = 0 ) const
+        {
+        	size_type count=0;
+        	while(s[count])++count;
+        	return find_first_of(s,pos,count);
+        }
+
+        size_type find_first_of(const string& str, size_type pos = 0 ) const
+        {
+        	return find_first_of(&str[0],pos,str.size());
+        }
+
+        size_type find_first_of( char ch, size_type pos = 0 ) const
+        {
+        	char temp=ch;
+        	return find_first_of(&temp,pos,1);
+        }
+
+        size_type find_first_not_of( const char* s, size_type pos, size_type count ) const
+        {
+        	if(pos>npos)return npos;
+        	else if(count==0)return min(npos,size());
+        	for(size_type i=pos;i<size();++i)
+        	{
+				size_type j = 0;
+        		for(;j<count;++j)
+        		{
+        			if(_start[i]==s[j])break;
+        		}
+        		if(j==count)return i;
+        	}
+        	return npos;   //没有这样的情况存在
+        }
+		size_type find_first_not_of(const string& str, size_type pos = 0) const
+		{
+			return find_first_not_of(&str[0], pos, str.size());
+		}
+        size_type find_first_not_of( const char* s, size_type pos = 0) const
+        {
+        	size_type count=0;
+        	while(s[count])++count;
+        	return find_first_not_of(s,pos,count);
+        }
+
+        size_type find_first_not_of( char ch, size_type pos = 0 ) const
+        {
+        	char temp=ch;
+        	return find_first_not_of(&temp,pos,1);
+        }
+
+        size_type find_last_of( const char* s, size_type pos, size_type count ) const
+        {
+        	if(pos>=size())pos=size()-1;  //限制范围
+        	else if(count==0)return max(0,pos);
+        	for(int i=(int)(pos);i>=0;--i)
+        	{
+        		for(int j=count-1;j>=0;--j)
+        		{
+        			if(_start[i]==s[j])return i;
+        		}
+        	}
+        	return npos;  //没找到
+        }
+
+        size_type find_last_of( const char* s, size_type pos = npos ) const
+        {
+        	size_type count=0;
+        	while(s[count])++count;
+        	return find_last_of(s,pos,count);
+        }
+
+        size_type find_last_of( const string& str, size_type pos = npos ) const
+        {
+        	return find_last_of(&str[0],pos,str.size());
+        }
+
+        size_type find_last_of(char ch, size_type pos = npos ) const
+        {
+        	char temp=ch;
+        	return find_last_of(&ch,pos,1);
+        }
+
+        size_type find_last_not_of(const char* s, size_type pos, size_type count) const
+        {
+        	if(pos>=size())pos=size()-1;
+        	else if(count==0)return max(pos,0);
+        	for(int i=(int)pos;i>=0;--i)
+        	{
+        		int j=(int)(count-1);
+        		for(;j>=0;--j)
+        		{
+        			if(_start[i]==s[j])break;
+        		}
+        		if(j<0)return i;   //找到
+        	}
+
+        	return npos;  //未找到
+        }
+
+        size_type find_last_not_of( const char* s, size_type pos = npos ) const
+        {
+        	size_type count=0;
+        	while(s[count])++count;
+        	return find_last_not_of(s,pos,count);
+        }
+
+        size_type find_last_not_of( const string& str, size_type pos = npos ) const
+        {
+        	return find_last_not_of(&str[0],pos,str.size());
+        }
+
+        size_type find_last_not_of( char ch, size_type pos = npos ) const
+        {
+        	char temp=ch;
+        	return find_last_not_of(&temp,pos,1);
+        }
+
 		//迭代器
 		iterator begin() { return iterator(_start); }
 		const_iterator begin()const { return const_iterator(_start); }
@@ -875,10 +1032,36 @@ namespace MyCppSTL
         }
 
 	};  // end-string
-
+    
+    //
 	const string::size_type string::npos =(string::size_type)-1;
-
-
+    //Non-member functions
+    string operator+(const string&lhs,const string&rhs)
+    {
+    	return ((string)(lhs)).append(rhs);
+    }
+	
+    string operator+(const char*s,const string&rhs)
+    {
+    	const string res(s);
+    	return (res+rhs);
+    }
+    string operator+(char ch,const string&rhs)
+    {
+    	const string res(1,ch);
+    	return (res+rhs);
+    }
+    string operator+(const string&lhs,const char*s)
+    {
+    	const string res(s);
+    	return (lhs+res);
+    }
+    string operator+(const string&lhs,char ch)
+    {
+    	string res(1,ch);
+    	return (lhs+res);
+    }
+	
 
 }  //end-namespace
 
