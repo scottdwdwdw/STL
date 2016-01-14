@@ -5,6 +5,7 @@
 #include"Iterator.h"
 #include"Algorithm.h"
 #include<initializer_list>
+#include<iostream>
 
 namespace MyCppSTL
 {
@@ -215,7 +216,7 @@ namespace MyCppSTL
 
 	//友元函数声明
 	public:
-		friend string operator+(string&,string&);
+	//	friend string operator+(const string&,const string&); //这里由于忘记同步参数类型，导致一个
 	public:
 		typedef char         value_type;
 		typedef char*        pointer;
@@ -1038,7 +1039,7 @@ namespace MyCppSTL
     //Non-member functions
     string operator+(const string&lhs,const string&rhs)
     {
-    	return ((string)(lhs)).append(rhs);
+    	return string(lhs).append(rhs);
     }
 	
     string operator+(const char*s,const string&rhs)
@@ -1061,6 +1062,64 @@ namespace MyCppSTL
     	string res(1,ch);
     	return (lhs+res);
     }
+	
+	//逻辑运算符
+	bool operator==(const string&lhs,const string&rhs)
+	{
+		if(lhs.size()==rhs.size())
+		{
+			auto it2=rhs.begin();
+			for(auto it=lhs.begin();it!=lhs.end();++it,++it2)
+			{
+				if(*it!=*it2)return false;
+			}
+			return true;
+		}
+		return false;
+	}
+	bool operator!=(const string&lhs,const string&rhs)
+	{
+		return !(lhs==rhs);
+	}
+	bool operator<(const string&lhs,const string&rhs)
+	{
+		return lexicographical_compare(lhs.begin(),lhs.end(),rhs.begin(),rhs.end());
+	}
+	bool operator>(const string&lhs,const string&rhs)
+	{
+		return (rhs<lhs);
+	}
+	bool operator<=(const string&lhs,const string&rhs)
+	{
+		return !(lhs>rhs);
+	}
+	bool operator>=(const string&lhs,const string&rhs)
+	{
+		return !(lhs<rhs);
+	}
+
+	void swap(string&lhs,string&rhs)
+	{
+		lhs.swap(rhs);
+	}
+
+	std::ostream& operator<<(std::ostream&os,MyCppSTL::string&s)
+	{
+		for(auto e:s)os<<e;
+		return os;
+	}
+
+    /*****/
+	std::istream&operator>>(std::istream&is,MyCppSTL::string&s)
+	{
+		char ch;         /*需要去掉前导空格，以及遇到空格要结束*/
+		while(is>>ch)
+		{
+			s.push_back(ch);
+		}
+		return is;
+	}
+
 	
 
 }  //end-namespace
