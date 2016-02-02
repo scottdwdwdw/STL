@@ -1,6 +1,3 @@
-//çº¢é»‘æ ‘ï¼Œset mapç­‰å…³è”å®¹å™¨çš„åº•å±‚å®ç°
-
-
 #ifndef RB_TREE_H
 #define RB_TREE_H
 
@@ -9,48 +6,467 @@
 
 namespace MyCppSTL
 {
-
-	using _rb_tree_color_type=bool;
-	const _rb_tree_color_type _rb_tree_red=false;
-	const _rb_tree_color_type _rb_tree_black=true;
-
-	struct _rb_tree_node_base
+	enum { RED = 0,BLACK = 1};
+	template<typename T>    //ºìºÚÊ÷½ÚµãµÄ¶¨Òå
+	struct rb_node
 	{
-		using color_type = _rb_tree_color_type;
-		using base_ptr=_rb_tree_node_base*;
+		using _Node= rb_node < T >;
+		using _NodePtr= rb_node<T>*;
+		using value_type= T;
+		rb_node():left(NULL), right(NULL), parent(NULL), value(T()), COLOR(RED) {}
+		_NodePtr left;
+		_NodePtr right;
+		_NodePtr parent;
+		T value;
+		int COLOR;
 
-		color_type color;
-		base_ptr parent;
-		base_ptr left;
-		base_ptr right;
+	};
+
+	//µü´úÆ÷Éè¼Æ
+	template<typename T>
+	struct RB_Tree_const_iterator :public iterator<bidirectional_iterator_tag, T>
+	{
+		//ÄÚÇ¶ĞÍ±ğ¶¨Òå
+		using value_type = const T;
+		using reference = const T&;
+		using pointer = const T*;
+		using myIter = RB_Tree_const_iterator<T>;
+		//³ÉÔ±
+		rb_node<T>*_node;
+
+		//¹¹Ôìº¯Êı
+		RB_Tree_const_iterator() {}
+		RB_Tree_const_iterator(const rb_node<T>* x) :_node(x) {}
+		RB_Tree_const_iterator(myIter&right) :_node(right._node) {}
+
+		//³ÉÔ±·½·¨
+		reference operator*() const
+		{
+			return _node->value;
+		}
+		pointer operator->() const
+		{
+			return &(operator*());
+		}
+
+		myIter& operator++() //Ç°ÖÃµİÔö
+		{
+			if (_node->right->parent == _node) //ËµÃ÷ÓĞÓÒº¢×Ó
+			{
+				_node = _node->right;
+				while (_node->left->parent == _node)_node = _node->left;
+			}
+			else //Ã»ÓĞÓÒº¢×Ó£¬»ØËİ
+			{
+				rb_node<T>* temp = _node->parent;
+				while (_node == temp->right)
+				{
+					_node = temp;
+					temp = temp->parent;
+				}//ÈôÑ°µ½¸ù½Úµã£¬ÄÇÃ´temp->right=null !=_node
+			}
+			return *this;
+		}
+
+		myIter operator++(int) //ºóÖÃµİÔö
+		{
+			auto temp = *this;
+			++*this;
+			return temp;
+		}
+
+		myIter& operator--() //Ç°ÖÃµİ¼õ
+		{
+			if (_node->left->parent == _node) //ÓĞ×óº¢×Ó
+			{
+				_node = _node->left;
+				while (_node->right->parent == _node)_node = _node->right;
+			}
+			else
+			{
+				rb_node<T>* temp = _node->parent;
+				while (temp->left == _node)
+				{
+					_node = temp;
+					temp = temp->parent;
+				}
+			}
+			return *this;
+		}
+
+		myIter operator--(int) //ºóÖÃµİ¼õ
+		{
+			auto temp = *this;
+			--*this;
+			return temp;
+		}
+
+			
 	};
 
 	template<typename T>
-	struct _rb_tree_node:public _rb_tree_node_base   //åˆ†å±‚ç»“æ„ï¼Œæ˜¯å› ä¸ºçº¢é»‘æ ‘çš„èŠ‚ç‚¹ä¸å¯¹è±¡å€¼å¾—ç±»å‹æ— å…³ã€‚
+	struct RB_Tree_iterator :public RB_Tree_const_iterator<T>
 	{
-		using link_type=_rb_tree_node<T>*;
-		T value_field;
+		//ÄÚÇ¶ĞÍ±ğ¶¨Òå
+		using value_type = T;
+		using reference = T&;
+		using pointer = T*;
+		using myIter = RB_Tree_iterator<T>;
+		using myBase = RB_Tree_const_iterator<T>;
+
+		RB_Tree_iterator() :RB_Tree_const_iterator(){}
+		RB_Tree_iterator(const rb_node<T>* x) :RB_Tree_const_iterator(x) {}
+		RB_Tree_iterator(myIter&right) :RB_Tree_const_iterator(right) {}
+
+		//³ÉÔ±º¯Êı
+		reference operator*() const
+		{
+			return _node->value;
+		}
+
+		pointer operator->() const
+		{
+			return &(operator*());
+		}
+
+		myIter& operator++()
+		{
+			++(myBase)*this;
+			return *this;
+		}
+
+		myIter operator++(int)
+		{
+			auto temp = *this;
+			++*this;
+			return temp;
+		}
+
+		myIter& operator--()
+		{
+			--(myBase)*this;
+			return *this;
+		}
+
+		myIter operator--(int)
+		{
+			auto temp = *this;
+			--*this;
+			return temp;
+		}
 	};
 
-	_rb_tree_node_base* nil;    //å“¨å…µèŠ‚ç‚¹
-
-	// 
-	struct _rb_tree_base_iterator
+	template<typename T,typename alloc=MyCppSTL::allocator<T>>
+	class RB_Tree
 	{
-	 	//å†…åµŒå‹åˆ«å®šä¹‰
-	 	using base_ptr = _rb_tree_node_base::base_ptr;      //æ ‘èŠ‚ç‚¹æŒ‡é’ˆ
-	 	using iterator_category=MyCppSTL::bidirectional_iterator_tag; //è¿­ä»£å™¨å‹åˆ«
-		using difference_type = std::ptrdiff_t;            //å·®
-		base_ptr node;
-	 	//
-	 	void increment();
-	 	void decrement();     
-	};
+	public:
+		using value_type = T;
+		using reference = T&;
+		using _Node = rb_node<T>;
+		using _NodePtr = rb_node<T>*;
+	private:
+		_NodePtr root;
+		_NodePtr nil;    //ÉÚ±ø½Úµã
+	public:
+		//
+		RB_Tree()
+		{
+			nil=make_node(T());
+			nil->COLOR=BLACK;
+			root=nil;
+			root->parent = nil;
+		}
+		void insert(_NodePtr&root,const T& key);   //²åÈëº¯Êı
+		_NodePtr& getRoot()
+		{
+			return root;
+		}
+		void tree_delete(_NodePtr position);
+		_NodePtr RB_tree_successor(_NodePtr position) const;  //²éÕÒºó¼Ì
+		_NodePtr tree_minnum(_NodePtr position) const;
+	private:
+		//Ë½ÓĞ³ÉÔ±º¯Êı
+		//Ğı×ª
+		void left_rotate(_NodePtr&position);   //×óĞı×ª
+		void right_rotate(_NodePtr&position);  //ÓÒĞı×ª
+		_NodePtr make_node(const T&key);     //¹¹Ôì½Úµã
+		void destory_node(_NodePtr position);  //É¾³ı½Úµã
+		void RB_insert_fixup(_NodePtr& position); //Î¬»¤ºìºÚÊ÷µÄĞÔÖÊ
+		void RB_delete_fixup(_NodePtr& position);//
+		
 
 
 
-}  //end of MyCppSTL
+	}; //end of class
 
-#include"RB_tree.im.h"
+	template<typename T, typename alloc>
+	typename RB_Tree<T,alloc>::_NodePtr RB_Tree<T,alloc>::make_node(const T&key)
+	{
+		_NodePtr temp=new _Node;
+		temp->left=temp->right=temp->parent=NULL;
+		temp->COLOR=RED;
+		temp->value=key;
+
+		return temp;
+	}
+
+	template<typename T, typename alloc>
+	void RB_Tree<T,alloc>::destory_node(_NodePtr position)
+	{
+		if(position)
+		{
+			free(position);
+		}
+	}
+
+    //×óĞı×ª
+	template<typename T, typename alloc>
+	void RB_Tree<T,alloc>::left_rotate(_NodePtr&position)   //²ÎÕÕÍ¼À´Àí½â
+	{
+		_NodePtr rotate_temp=position->right;   //ÆäÖĞposition->rightÊÇÒ»¶¨´æÔÚµÄ£¬·ñÔòÒ²¾ÍÃ»±ØÒªĞı×ªÁË
+
+		position->right = rotate_temp->left; 
+		if(rotate_temp->left!=nil)rotate_temp->left->parent=position;   //½«yµÄ×ó×ÓÊ÷½Óµ½positionÉÏ
+
+		rotate_temp->parent=position->parent;
+		if(position->parent==nil)root=rotate_temp;  //ÉèÖÃ¸ù½Úµã
+		else if(position==position->parent->left)position->parent->left=rotate_temp;
+		else if(position==position->parent->right)position->parent->right=rotate_temp;
+		
+
+		rotate_temp->left=position;
+		position->parent=rotate_temp;
+
+
+	}
+
+	//ÓÒĞı×ª
+	template<typename T, typename alloc >
+	void RB_Tree<T,alloc>::right_rotate(_NodePtr&position)
+	{
+		_NodePtr rotate_temp=position->left;
+
+		position->left=rotate_temp->right;
+		if(rotate_temp->right!=nil)rotate_temp->right->parent=position;
+
+		rotate_temp->parent=position->parent;
+		if(position->parent==nil)root=rotate_temp;
+		else if(position==position->parent->left)position->parent->left=rotate_temp;
+		else if(position==position->parent->right)position->parent->right=rotate_temp;
+
+		rotate_temp->right=position;
+		position->parent=rotate_temp;
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	void RB_Tree<T,alloc>::insert(_NodePtr&root,const T& key)  //²åÈëÔªËØ
+	{
+		_NodePtr pre=root;
+		_NodePtr cur=root;  
+		_NodePtr insert_node=make_node(key);
+		while(cur!=nil)
+		{
+			pre=cur;
+			if(key<cur->value)cur=cur->left;
+			else
+				cur=cur->right;
+		}
+		insert_node->parent=pre;
+		if(pre==nil)root=insert_node;
+		else if(key<pre->value)pre->left=insert_node;
+		else 
+		{
+			pre->right=insert_node;
+		}
+		insert_node->left=nil;
+		insert_node->right=nil;
+		insert_node->COLOR=RED;
+		//²åÈëÍê³É£¬ÏÂÃæÎ¬»¤ºìºÚÊ÷µÄĞÔÖÊ
+		RB_insert_fixup(insert_node);
+
+	}
+
+	template<typename T, typename alloc >   //Î¬»¤Ê÷µÄĞÔÖÊ
+	void RB_Tree<T,alloc>::RB_insert_fixup(_NodePtr& position)
+	{
+		while(position->parent->COLOR==RED)  //ÕâÀïÄÜ¹»±£Ö¤¸ù½ÚµãµÄÑÕÉ«ÊÇºÚÉ«µÄ
+		{
+			if(position->parent==position->parent->parent->left)  
+			{
+				if(position->parent->parent->right->COLOR==RED)  //case1,Êå½ÚµãÒ²ÊÇºìÉ«
+				{
+					position->parent->parent->right->COLOR=BLACK;
+					position->parent->COLOR=BLACK;
+					position->parent->parent->COLOR=RED;
+					position=position->parent->parent;   //½øÈëÏÂÒ»ÂÖµÄÑ­»·
+				}
+				else if(position==position->parent->right)      //case 2 Òª½«Æä×ª»»Îªcase3
+				{
+					position=position->parent;
+					left_rotate(position);  //×óĞı×ª×ª»»ÎªÁËcase3
+				}
+				else if(position==position->parent->left)//Êå½Úµã¿Ï¶¨ÊÇºÚÉ«µÄ
+				{
+					position->parent->COLOR=BLACK;
+					position->parent->parent->COLOR=RED;
+					position=position->parent->parent;
+					right_rotate(position);    //ÓÒĞı×ª
+				}
+			}
+			else if(position->parent=position->parent->parent->right)
+			{
+				if(position->parent->parent->left->COLOR==RED) //Êå½Úµã
+				{
+					 position->parent->parent->left->COLOR=BLACK;
+					 position->parent->parent->COLOR=RED;
+					 position->parent->COLOR=BLACK;
+					 position=position->parent->parent;
+				}
+				else if(position==position->parent->left)   //case 2
+				{
+					position=position->parent;
+					right_rotate(position);    //ÓÒĞı×ª  ,×ª»»Îªcase3
+				}
+				else if(position==position->parent->right)
+				{
+					position->parent->COLOR=BLACK;
+					position->parent->parent->COLOR=RED;
+					position=position->parent->parent;
+					left_rotate(position);   //×óĞı
+				}
+			}
+		}
+
+		root->COLOR=BLACK; //±£³Ö¸ùÎªºÚÉ«
+	}
+
+	template<typename T, typename alloc>
+    typename RB_Tree<T,alloc>::_NodePtr RB_Tree<T,alloc>::tree_minnum(_NodePtr position) const
+    {
+    	if(position->left==nil)return position;
+    	return tree_minnum(position->left);
+    }
+
+
+	template<typename T, typename alloc >
+	typename RB_Tree<T,alloc>::_NodePtr RB_Tree<T,alloc>::RB_tree_successor(_NodePtr position) const
+	{
+		if(position->right!=nil)return tree_minnum(position->right);
+		while(position!=nil&&position==position->parent->right)position=position->parent;
+		return position;
+	}
+
+	template<typename T,typename alloc>
+	void RB_Tree<T,alloc>::tree_delete(_NodePtr position)
+	{
+		_NodePtr del_temp=nil;  //Êµ¼ÊÉ¾³ıµÄ½Úµã
+		_NodePtr repl_temp=nil;
+		if(position->left==nil||position->right==nil)del_temp=position;
+		else
+		{
+			del_temp=RB_tree_successor(position);  //É¾µôÆäºó¼Ì
+		}
+		if(del_temp->left!=nil)repl_temp=del_temp->left;
+		else
+			repl_temp=del_temp->right;
+		repl_temp->parent=del_temp->parent;     
+		if(del_temp->parent==nil)root=repl_temp;
+		else if(del_temp==del_temp->parent->left)del_temp->parent->left=repl_temp;
+		else if(del_temp==del_temp->parent->right)del_temp->parent->right=repl_temp;
+
+		if(del_temp!=position)
+			{
+				position->value=del_temp->value;
+				//position->COLOR=del_temp->COLOR;  //´ıÈ·ÈÏ£¿
+			}
+
+		//ÏÂÃæÊÇÑÕÉ«µÄÎ¬»¤
+		if(del_temp->COLOR==BLACK)
+		{
+			RB_delete_fixup(repl_temp);
+		}
+
+		//ÊÍ·Å½Úµã¿Õ¼ä
+		destory_node(del_temp);
+
+	}
+
+	template<typename T,typename alloc>
+	void RB_Tree<T,alloc>::RB_delete_fixup(_NodePtr& position)
+	{
+		while(position!=root&&position->COLOR==BLACK) //Ö»¶ÔpositionµÄcolorµÄÑÕÉ«ÊÇblack(Ë«ÖØºÚÉ«)µÄÌÖÂÛ£¬ÒòÎªÈç¹ûÊÇred£¬Ôò¿ÉÒÔÖ±½ÓÉèÖÃÎªblack
+		{
+			if(position==position->parent->left)
+			{
+				_NodePtr bro=position->parent->right;
+				if(bro->COLOR==RED) //case 1,ĞÖµÜ½ÚµãÓĞÁ½¸öºÚÉ«º¢×Ó
+				{
+					bro->COLOR=BLACK;
+					position->parent->COLOR=RED;
+					left_rotate(position->parent); //convert to case2/3/4
+					bro=position->parent->right;
+				}
+				if(bro->right->COLOR==BLACK&&bro->left->COLOR==BLACK) //case2,3¸ö¶¼ÊÇºÚÉ«µÄ£¬ÄÇÃ´positionºÍbro¶¼ÍÑÈ¥ºÚÉ«
+				{
+					bro->COLOR=RED;
+					position=position->parent;//Ïàµ±ÓÚ°ÑÄÇÒ»²ãºÚÉ«×ªÒÆµ½positionµÄ¸¸½ÚµãÁË£¬²»¹ÜÆä¸¸½ÚµãÊÇÊ²Ã´ÑÕÉ«£¬Èç¹ûÊÇºìÉ«£¬¼´ÎªºìºÚ£¬ÍË³öÑ­»·£¬Èç¹ûÊÇºÚÉ«£¬ÔòÊÇºÚºÚ£¬¼ÌĞøÑ­»·£¬°ÑÕâ¸öºÚÉ«¼ÌĞøÍùÉÏ²ãÒÆ¶¯
+					
+				}
+				else if(bro->right->COLOR==BLACK) //case 3,Æä×ó×ÓµÄÑÕÉ«ÊÇºìÉ«µÄ£¬ÓÒ×ÓÊÇºÚÉ« convert to case 4
+				{
+					bro->left->COLOR=BLACK;
+					bro->COLOR=RED;
+					right_rotate(bro);
+					bro=position->parent->right;
+				}
+				//bro->right->COLOR=RED      case 4  //ÓÒº¢×ÓÊÇºìÉ«µÄ
+
+				bro->COLOR=position->parent->COLOR;
+				position->parent->COLOR=BLACK;
+				bro->right->COLOR=BLACK;
+				left_rotate(position->parent);
+				position=root;
+			}
+			else if(position==position->parent->right)//ÓÒº¢×Ó
+			{
+				 _NodePtr bro=position->parent->left;
+				 if(bro->COLOR==RED)  //Ïë·¨ÊÇÒªÎ¬»¤ĞÔÖÊ5
+				 {
+				 	bro->COLOR=BLACK;
+				 	position->parent->COLOR=RED;
+				 	right_rotate(position->parent);
+				 	bro=position->parent->left;
+				 }
+				 if(bro->left->COLOR==BLACK&&bro->right->COLOR==BLACK)//case 2  bro->COLOR==BLACK
+				 {
+				 	bro->COLOR=RED;
+				 	position=position->parent;
+				 }
+				 else if(bro->left->COLOR==BLACK) //bro->right->COLOR=RED; case 3
+				 {
+				 	bro->right->COLOR=BLACK;
+				 	bro->COLOR=RED;
+				 	left_rotate(bro);
+				 	bro=position->parent->left;
+				 }
+				 //bro->left->COLOR==RED,bro->right->COLOR=RED   case 4
+				 bro->COLOR=position->parent->COLOR;  //½»»»ĞÖµÜ½ÚµãµÄÑÕÉ«ºÍÆä¸¸½ÚµãµÄÑÕÉ«£¬ĞÖµÜ½ÚµãÑÕÉ«¿Ï¶¨ÊÇºÚÉ«µÄ
+				 position->parent->COLOR=BLACK;
+				 bro->left->COLOR=BLACK;
+				 right_rotate(position->parent);
+				 position=root;
+			}
+		}
+
+		position->COLOR=BLACK;
+
+	}
+
+
+} //end of namespace
+
+
+
+
 
 #endif
