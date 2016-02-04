@@ -36,7 +36,7 @@ namespace MyCppSTL
 
 		//构造函数
 		RB_Tree_const_iterator() {}
-		RB_Tree_const_iterator(const rb_node<T>* x) :_node(x) {}
+		RB_Tree_const_iterator(rb_node<T>* x) :_node(x) {}
 		RB_Tree_const_iterator(myIter&right) :_node(right._node) {}
 
 		//成员方法
@@ -64,7 +64,10 @@ namespace MyCppSTL
 					_node = temp;
 					temp = temp->parent;
 				}//若寻到根节点，那么temp->right=null !=_node
+				_node = temp;
 			}
+
+			
 			return *this;
 		}
 
@@ -89,7 +92,8 @@ namespace MyCppSTL
 				{
 					_node = temp;
 					temp = temp->parent;
-				}
+				}   
+				//不用表示begin
 			}
 			return *this;
 		}
@@ -101,7 +105,15 @@ namespace MyCppSTL
 			return temp;
 		}
 
-			
+		//逻辑操作
+		bool operator==(myIter&right) const
+		{
+			return _node == right._node;
+		}
+		bool operator!=(myIter&right) const
+		{
+			return !(*this == right);
+		}
 	};
 
 	template<typename T>
@@ -115,7 +127,7 @@ namespace MyCppSTL
 		using myBase = RB_Tree_const_iterator<T>;
 
 		RB_Tree_iterator() :RB_Tree_const_iterator(){}
-		RB_Tree_iterator(const rb_node<T>* x) :RB_Tree_const_iterator(x) {}
+		RB_Tree_iterator(rb_node<T>* x) :RB_Tree_const_iterator(x) {}   //接受一个rb_node节点的类型转换
 		RB_Tree_iterator(myIter&right) :RB_Tree_const_iterator(right) {}
 
 		//成员函数
@@ -131,7 +143,8 @@ namespace MyCppSTL
 
 		myIter& operator++()
 		{
-			++(myBase)*this;
+			++*(myBase*)this;
+			//++((myBase)this);
 			return *this;
 		}
 
@@ -144,7 +157,7 @@ namespace MyCppSTL
 
 		myIter& operator--()
 		{
-			--(myBase)*this;
+			--*(myBase*)this;
 			return *this;
 		}
 
@@ -156,6 +169,10 @@ namespace MyCppSTL
 		}
 	};
 
+
+	/*
+	有一个nil节点，节点的parent指向NULL,令left指向最右的元素，考虑end()的实现。
+	*/
 	template<typename T,typename alloc=MyCppSTL::allocator<T>>
 	class RB_Tree
 	{
@@ -164,9 +181,16 @@ namespace MyCppSTL
 		using reference = T&;
 		using _Node = rb_node<T>;
 		using _NodePtr = rb_node<T>*;
+		using iterator = RB_Tree_iterator<T>;
+		using rb_tree_node_alloc = MyCppSTL::allocator<rb_node<T>>;
+		using const_iterator = RB_Tree_const_iterator<T>;
+		using size_type = std::size_t;
+		using myTree = RB_Tree<T>;
 	private:
-		_NodePtr root;
-		_NodePtr nil;    //哨兵节点
+		_NodePtr root;         //数根节点
+		_NodePtr nil;          //哨兵节点
+		size_type node_count;  //节点计数
+		
 	public:
 		//
 		RB_Tree()
@@ -176,37 +200,74 @@ namespace MyCppSTL
 			root=nil;
 			root->parent = nil;
 		}
-		void insert(_NodePtr&root,const T& key);   //插入函数
-		_NodePtr& getRoot()
+		RB_Tree(RB_Tree<T>&right) //copy construct
 		{
-			return root;
+			nil = make_node(T());
+			nil->COLOR = BLACK;
+			root = nil;
+			root->parent = nil;
+			tree_clone(right.getRoot(), nil);
+			node_count = right.node_count;
 		}
+
+
+		//拷贝操作符
+		myTree operator=(const myTree&right);
+		
+		_NodePtr& getRoot(){return root;}
 		void tree_delete(_NodePtr position);
+		iterator insert_equal(const T&key);    //插入元素，允许有重复元素
+		iterator insert_unique(const T& key);  //插入元素，不允许重复元素
 		_NodePtr RB_tree_successor(_NodePtr position) const;  //查找后继
-		_NodePtr tree_minnum(_NodePtr position) const;
+		_NodePtr tree_minnum(_NodePtr position) const;  
+
+		//迭代器
+		iterator begin() { return iterator(tree_minnum(getRoot())); }
+		const_iterator begin() const { return const_iterator(tree_minnum(getRoot())); }
+		const_iterator cbegin() const {return const_iterator(tree_minnum(getRoot()));}
+		iterator end() { return iterator(nil); }
+		const_iterator end() const { return const_iterator(nil); }
+		const_iterator cend() const { return const_iterator(nil); }
 	private:
 		//私有成员函数
 		//旋转
+		iterator __insert(_NodePtr&root,const T& key);   //插入元素
 		void left_rotate(_NodePtr&position);   //左旋转
 		void right_rotate(_NodePtr&position);  //右旋转
 		_NodePtr make_node(const T&key);     //构造节点
 		void destory_node(_NodePtr position);  //删除节点
 		void RB_insert_fixup(_NodePtr& position); //维护红黑树的性质
 		void RB_delete_fixup(_NodePtr& position);//
+		_NodePtr node_clone(_NodePtr position); //节点的拷贝
+		_NodePtr tree_clone(_NodePtr position, _NodePtr parent); //树的拷贝
 		
-
+		void clear(_NodePtr position);  //树的销毁
 
 
 	}; //end of class
 
+	template<typename T,typename alloc>
+	inline typename RB_Tree<T, alloc>::_NodePtr RB_Tree<T, alloc>::node_clone(_NodePtr position)
+	{
+		_NodePtr temp = make_node(position->value);
+		temp->COLOR = position->COLOR;
+		temp->left = temp->right = temp->parent = NULL;
+		return temp;
+	}
+
 	template<typename T, typename alloc>
 	typename RB_Tree<T,alloc>::_NodePtr RB_Tree<T,alloc>::make_node(const T&key)
 	{
+		/*
 		_NodePtr temp=new _Node;
 		temp->left=temp->right=temp->parent=NULL;
 		temp->COLOR=RED;
 		temp->value=key;
-
+		*/
+		_NodePtr temp = rb_tree_node_alloc::allocate();
+		temp->left = temp->right = temp->parent = NULL;
+		temp->COLOR = RED;
+		MyCppSTL::construct(&temp->value,key);
 		return temp;
 	}
 
@@ -215,7 +276,9 @@ namespace MyCppSTL
 	{
 		if(position)
 		{
-			free(position);
+			//free(position);
+			MyCppSTL::destroy(&position->value);
+			rb_tree_node_alloc::deallocate(position);
 		}
 	}
 
@@ -259,7 +322,7 @@ namespace MyCppSTL
 	}
 
 	template<typename T, typename alloc = MyCppSTL::allocator<T>>
-	void RB_Tree<T,alloc>::insert(_NodePtr&root,const T& key)  //插入元素
+	typename RB_Tree<T,alloc>::iterator RB_Tree<T,alloc>::__insert(_NodePtr&root, const T& key)  //插入元素
 	{
 		_NodePtr pre=root;
 		_NodePtr cur=root;  
@@ -283,6 +346,10 @@ namespace MyCppSTL
 		insert_node->COLOR=RED;
 		//插入完成，下面维护红黑树的性质
 		RB_insert_fixup(insert_node);
+		++node_count;
+		
+
+		return iterator(insert_node);
 
 	}
 
@@ -461,6 +528,84 @@ namespace MyCppSTL
 		position->COLOR=BLACK;
 
 	}
+
+
+	//插入元素，允许有重复元素
+	template<typename T,typename alloc>
+	inline typename RB_Tree<T, alloc>::iterator RB_Tree<T, alloc>::insert_equal(const T&key)
+	{
+		return __insert(getRoot(), key);
+	}
+
+
+	//树的拷贝
+	template<typename T,typename alloc>
+	typename RB_Tree<T, alloc>::_NodePtr RB_Tree<T, alloc>::tree_clone(_NodePtr position, _NodePtr p)
+	{
+		_NodePtr temp = node_clone(position);
+		temp->parent = p;      //设置父节点
+		if (root == nil)
+			root = temp;   //设置根节点
+	
+
+		if (position->right->parent == position)  //有右子树
+		{
+			temp->right = tree_clone(position->right, temp);
+		}
+		else
+		{
+			temp->right = nil;  //没有右子树，加上叶子节点
+		}
+		p = temp;
+		//position = position->left;   //转到左子树
+	
+		while (position->left->parent == position)
+		{
+			position = position->left;
+			_NodePtr temp2 = tree_clone(position, p);
+			p->left = temp2;
+			temp2->parent = p;
+			if (position->right->parent==position)
+				temp2->right = tree_clone(position->right, temp2);
+			p = temp2;
+		//	position = position->left;
+		}
+		p->left = nil;//没有左子树了，加上叶子节点
+
+
+	
+		return temp; //注意返回的节点是temp,而不是p
+	}
+
+	//树拷贝运算符
+	/*
+	template<typename T,typename alloc>
+	typename RB_Tree<T, alloc>::myTree RB_Tree<T, alloc>::operator=(const myTree&right)
+	{
+		if (this != &right)
+		{
+			//
+		}
+	}
+	*/
+
+	//树的销毁
+	template<typename T,typename alloc>
+	void RB_Tree<T, alloc>::clear(_NodePtr position)
+	{
+		if (position)
+		{
+			auto it = iterator(position);  
+			auto it2 = ++it;
+			while (it2 != nil)
+			{
+				destory_node(it._node);
+				it = it2;
+				++it2;
+			}
+		}
+	}
+
 
 
 } //end of namespace
