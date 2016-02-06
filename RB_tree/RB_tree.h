@@ -3,6 +3,7 @@
 
 #include"Allocator.h"
 #include"Iterator.h"
+#include<utility>
 
 namespace MyCppSTL
 {
@@ -210,14 +211,28 @@ namespace MyCppSTL
 			node_count = right.node_count;
 		}
 
+		~RB_Tree()
+		{
+			clear(root);
+			if (nil)
+			{
+				destory_node(nil);
+			}
+		}
+
 
 		//拷贝操作符
 		myTree operator=(const myTree&right);
+
+		//树为空
+		bool empty() const { return node_count == 0; }
+		size_type size() const { return node_count; }
+
 		
 		_NodePtr& getRoot(){return root;}
 		void tree_delete(_NodePtr position);
 		iterator insert_equal(const T&key);    //插入元素，允许有重复元素
-		iterator insert_unique(const T& key);  //插入元素，不允许重复元素
+		std::pair<iterator,bool> insert_unique(const T& key);  //插入元素，不允许重复元素
 		_NodePtr RB_tree_successor(_NodePtr position) const;  //查找后继
 		_NodePtr tree_minnum(_NodePtr position) const;  
 
@@ -228,6 +243,19 @@ namespace MyCppSTL
 		iterator end() { return iterator(nil); }
 		const_iterator end() const { return const_iterator(nil); }
 		const_iterator cend() const { return const_iterator(nil); }
+
+		//查找,树的查找
+		iterator find(const T&value) 
+		{
+			iterator it = begin();
+			while (it != end())
+			{
+				if (*it == value)return it;
+				++it;
+			}
+
+			return end();
+		}
 	private:
 		//私有成员函数
 		//旋转
@@ -241,7 +269,7 @@ namespace MyCppSTL
 		_NodePtr node_clone(_NodePtr position); //节点的拷贝
 		_NodePtr tree_clone(_NodePtr position, _NodePtr parent); //树的拷贝
 		
-		void clear(_NodePtr position);  //树的销毁
+		void clear(iterator position);  //树的销毁(非const版本)
 
 
 	}; //end of class
@@ -346,7 +374,7 @@ namespace MyCppSTL
 		insert_node->COLOR=RED;
 		//插入完成，下面维护红黑树的性质
 		RB_insert_fixup(insert_node);
-		++node_count;
+		
 		
 
 		return iterator(insert_node);
@@ -534,7 +562,26 @@ namespace MyCppSTL
 	template<typename T,typename alloc>
 	inline typename RB_Tree<T, alloc>::iterator RB_Tree<T, alloc>::insert_equal(const T&key)
 	{
-		return __insert(getRoot(), key);
+
+		auto it = __insert(getRoot(), key);
+		++node_count;
+		return it;
+	}
+
+	template<typename T,typename alloc>
+	inline std::pair<typename RB_Tree<T, alloc>::iterator, bool> RB_Tree<T, alloc>::insert_unique(const T&key)
+	{
+		auto it = find(key);
+		if (it == end())//可以插入
+		{
+			it = __insert(getRoot(), key);
+			++node_count;
+			return std::make_pair(it,true);
+		}
+		else //不可以插入
+		{
+			return std::make_pair(it, false);   //返回的是该元素在该树中的位置的迭代器
+		}
 	}
 
 
@@ -578,31 +625,31 @@ namespace MyCppSTL
 	}
 
 	//树拷贝运算符
-	/*
+	
 	template<typename T,typename alloc>
 	typename RB_Tree<T, alloc>::myTree RB_Tree<T, alloc>::operator=(const myTree&right)
 	{
 		if (this != &right)
 		{
-			//
+			clear(begin());   //销毁整棵树
+			tree_clone(right.root, nil);
+			node_count = right.node_count;
 		}
+		return *this;
 	}
-	*/
+	
 
 	//树的销毁
 	template<typename T,typename alloc>
-	void RB_Tree<T, alloc>::clear(_NodePtr position)
+	void RB_Tree<T, alloc>::clear(iterator position)
 	{
-		if (position)
+		auto it = position;  
+		auto it2 = ++it;
+		while (it2 != end())
 		{
-			auto it = iterator(position);  
-			auto it2 = ++it;
-			while (it2 != nil)
-			{
-				destory_node(it._node);
-				it = it2;
-				++it2;
-			}
+			destory_node(it._node);
+			it = it2;
+			++it2;
 		}
 	}
 
