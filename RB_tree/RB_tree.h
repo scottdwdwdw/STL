@@ -40,6 +40,10 @@ namespace MyCppSTL
 		RB_Tree_const_iterator(rb_node<T>* x) :_node(x) {}
 		RB_Tree_const_iterator(myIter&right) :_node(right._node) {}
 
+		rb_node<T>* getNode() const
+		{
+			return _node;
+		}
 		//成员方法
 		reference operator*() const
 		{
@@ -179,14 +183,20 @@ namespace MyCppSTL
 	{
 	public:
 		using value_type = T;
+		using key_type = T;     //需修改
 		using reference = T&;
+		using const_reference = const T&;
 		using _Node = rb_node<T>;
 		using _NodePtr = rb_node<T>*;
 		using iterator = RB_Tree_iterator<T>;
 		using rb_tree_node_alloc = MyCppSTL::allocator<rb_node<T>>;
 		using const_iterator = RB_Tree_const_iterator<T>;
 		using size_type = std::size_t;
+		using difference = std::ptrdiff_t;
 		using myTree = RB_Tree<T>;
+		using pointer = T*;
+		using const_pointer = const T*;
+		
 	private:
 		_NodePtr root;         //数根节点
 		_NodePtr nil;          //哨兵节点
@@ -213,7 +223,7 @@ namespace MyCppSTL
 
 		~RB_Tree()
 		{
-			clear(root);
+			clear();
 			if (nil)
 			{
 				destory_node(nil);
@@ -229,20 +239,40 @@ namespace MyCppSTL
 		size_type size() const { return node_count; }
 
 		
-		_NodePtr& getRoot(){return root;}
+		_NodePtr& getRoot() const 
+		{  
+			return _NodePtr(root); //为什么
+		}
 		void tree_delete(_NodePtr position);
 		iterator insert_equal(const T&key);    //插入元素，允许有重复元素
 		std::pair<iterator,bool> insert_unique(const T& key);  //插入元素，不允许重复元素
+		template<typename InputIter>
+		void insert_unique(InputIter first, InputIter last);
+		void erase(iterator position);
+		size_type erase(const key_type&x);
+		void erase(iterator first, iterator last);
 		_NodePtr RB_tree_successor(_NodePtr position) const;  //查找后继
 		_NodePtr tree_minnum(_NodePtr position) const;  
 
 		//迭代器
 		iterator begin() { return iterator(tree_minnum(getRoot())); }
-		const_iterator begin() const { return const_iterator(tree_minnum(getRoot())); }
+		const_iterator begin() const 
+		{ 
+			auto res = tree_minnum(getRoot());
+			return const_iterator(res); 
+		}
 		const_iterator cbegin() const {return const_iterator(tree_minnum(getRoot()));}
 		iterator end() { return iterator(nil); }
 		const_iterator end() const { return const_iterator(nil); }
 		const_iterator cend() const { return const_iterator(nil); }
+
+		//swap
+		void swap(RB_Tree<T, alloc>&right)
+		{
+			std::swap(root, right.root);
+			std::swap(nil, right.nil);
+			std::swap(node_count, right.node_count);
+		}
 
 		//查找,树的查找
 		iterator find(const T&value) 
@@ -256,6 +286,7 @@ namespace MyCppSTL
 
 			return end();
 		}
+
 	private:
 		//私有成员函数
 		//旋转
@@ -269,7 +300,7 @@ namespace MyCppSTL
 		_NodePtr node_clone(_NodePtr position); //节点的拷贝
 		_NodePtr tree_clone(_NodePtr position, _NodePtr parent); //树的拷贝
 		
-		void clear(iterator position);  //树的销毁(非const版本)
+		void clear();  //树的销毁(非const版本)
 
 
 	}; //end of class
@@ -438,7 +469,7 @@ namespace MyCppSTL
 	template<typename T, typename alloc>
     typename RB_Tree<T,alloc>::_NodePtr RB_Tree<T,alloc>::tree_minnum(_NodePtr position) const
     {
-    	if(position->left==nil)return position;
+    	if(position->parent == position||position->left==nil )return position;   //更改，防止树为空的情况
     	return tree_minnum(position->left);
     }
 
@@ -641,16 +672,47 @@ namespace MyCppSTL
 
 	//树的销毁
 	template<typename T,typename alloc>
-	void RB_Tree<T, alloc>::clear(iterator position)
+	void RB_Tree<T, alloc>::clear()
 	{
-		auto it = position;  
-		auto it2 = ++it;
-		while (it2 != end())
+		auto it = begin();
+		auto it_pre = it++;
+		while (it != end())  //红黑树的实现有误
 		{
-			destory_node(it._node);
-			it = it2;
-			++it2;
+			erase(it_pre);
+			it_pre = it++;	
 		}
+
+	}
+
+	template<typename T,typename alloc>
+	template<typename InputIter>
+	void RB_Tree<T, alloc>::insert_unique(InputIter first, InputIter last)
+	{
+		for (; first != last; ++first)
+		{
+			insert_unique(*first);
+		}
+	}
+
+	//删除节点
+	template<typename T,typename alloc>
+	inline void RB_Tree<T, alloc>::erase(iterator position)
+	{
+		tree_delete(position.getNode());  //
+	}
+
+	/*
+	template<typename T,typename alloc>
+	inline RB_Tree<T, alloc>::size_type RB_Tree<T, alloc>::erase(const key_type&x)
+	{
+		
+	}
+	*/
+	template<typename T,typename alloc>
+	inline void RB_Tree<T, alloc>::erase(iterator first, iterator last)
+	{
+		auto it = first;
+		while (it != last)erase(it++);
 	}
 
 
