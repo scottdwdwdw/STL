@@ -3,6 +3,7 @@
 
 #include"Allocator.h"
 #include"Iterator.h"
+#include"Algorithm.h"
 #include<utility>
 
 namespace MyCppSTL
@@ -183,7 +184,7 @@ namespace MyCppSTL
 	{
 	public:
 		using value_type = T;
-		using key_type = T;     //需修改
+		using key_type = T;     ////需修改/////
 		using reference = T&;
 		using const_reference = const T&;
 		using _Node = rb_node<T>;
@@ -223,7 +224,7 @@ namespace MyCppSTL
 
 		~RB_Tree()
 		{
-			clear();
+			if(begin()!=end())clear();
 			if (nil)
 			{
 				destory_node(nil);
@@ -275,9 +276,9 @@ namespace MyCppSTL
 		}
 
 		//查找,树的查找
-		iterator find(const T&value) 
+		const_iterator find(const key_type&value) const
 		{
-			iterator it = begin();
+			auto it = begin();
 			while (it != end())
 			{
 				if (*it == value)return it;
@@ -286,6 +287,31 @@ namespace MyCppSTL
 
 			return end();
 		}
+
+		iterator find(const key_type&value)
+		{
+			auto it = begin();
+			while (it != end())
+			{
+				if (*it == value)return it;
+				++it;
+			}
+
+			return end();
+		}
+
+		//算法
+		const_iterator lower_bound(const key_type&_key) const;
+		const_iterator upper_bound(const key_type&_key) const;
+		std::pair<const_iterator, const_iterator> equal_range(const key_type&_key) const;
+
+		iterator lower_bound(const key_type&_key) ;
+		iterator upper_bound(const key_type&_key) ;
+		std::pair<iterator, iterator> equal_range(const key_type&_key);
+
+		size_type distance(const_iterator first, const_iterator last) const;
+
+		void clear();  //树的销毁(非const版本)
 
 	private:
 		//私有成员函数
@@ -300,7 +326,7 @@ namespace MyCppSTL
 		_NodePtr node_clone(_NodePtr position); //节点的拷贝
 		_NodePtr tree_clone(_NodePtr position, _NodePtr parent); //树的拷贝
 		
-		void clear();  //树的销毁(非const版本)
+		
 
 
 	}; //end of class
@@ -493,28 +519,38 @@ namespace MyCppSTL
 			del_temp=RB_tree_successor(position);  //删掉其后继
 		}
 		if(del_temp->left!=nil)repl_temp=del_temp->left;
+		else if (del_temp->right != nil)repl_temp = del_temp->right;  //更改
 		else
-			repl_temp=del_temp->right;
-		repl_temp->parent=del_temp->parent;     
-		if(del_temp->parent==nil)root=repl_temp;
-		else if(del_temp==del_temp->parent->left)del_temp->parent->left=repl_temp;
-		else if(del_temp==del_temp->parent->right)del_temp->parent->right=repl_temp;
-
+			repl_temp = nil;
+		
+		repl_temp->parent = del_temp->parent;
+		//如果 repl_temp是nil，则不对父节点进行赋值
+		if (del_temp->parent == nil)root = repl_temp;
+		else if (del_temp == del_temp->parent->left)del_temp->parent->left = repl_temp;
+		else if (del_temp == del_temp->parent->right)del_temp->parent->right = repl_temp;
+		
+	
 		if(del_temp!=position)
-			{
-				position->value=del_temp->value;
-				//position->COLOR=del_temp->COLOR;  //待确认？
-			}
+		{
+			position->value=del_temp->value;
+			//position->COLOR=del_temp->COLOR;  //待确认？
+		}
+
+		auto repl_temp_copy = repl_temp;
 
 		//下面是颜色的维护
 		if(del_temp->COLOR==BLACK)
 		{
 			RB_delete_fixup(repl_temp);
+		
 		}
 
 		//释放节点空间
 		destory_node(del_temp);
-
+		--node_count;
+		if (repl_temp_copy == nil)repl_temp_copy->parent = nil;  //为了保持nil的parent不指向任何节点的性质
+		
+		
 	}
 
 	template<typename T,typename alloc>
@@ -538,20 +574,24 @@ namespace MyCppSTL
 					position=position->parent;//相当于把那一层黑色转移到position的父节点了，不管其父节点是什么颜色，如果是红色，即为红黑，退出循环，如果是黑色，则是黑黑，继续循环，把这个黑色继续往上层移动
 					
 				}
-				else if(bro->right->COLOR==BLACK) //case 3,其左子的颜色是红色的，右子是黑色 convert to case 4
+				else 
 				{
-					bro->left->COLOR=BLACK;
-					bro->COLOR=RED;
-					right_rotate(bro);
-					bro=position->parent->right;
-				}
-				//bro->right->COLOR=RED      case 4  //右孩子是红色的
+					if (bro->right->COLOR == BLACK) //case 3,其左子的颜色是红色的，右子是黑色 convert to case 4
+					{
+						bro->left->COLOR = BLACK;
+						bro->COLOR = RED;
+						right_rotate(bro);
+						bro = position->parent->right;
+					}
+					//bro->right->COLOR=RED      case 4  //右孩子是红色的
 
-				bro->COLOR=position->parent->COLOR;
-				position->parent->COLOR=BLACK;
-				bro->right->COLOR=BLACK;
-				left_rotate(position->parent);
-				position=root;
+					bro->COLOR = position->parent->COLOR;
+					position->parent->COLOR = BLACK;
+					bro->right->COLOR = BLACK;
+					left_rotate(position->parent);
+					position = root;
+				}
+				
 			}
 			else if(position==position->parent->right)//右孩子
 			{
@@ -568,19 +608,23 @@ namespace MyCppSTL
 				 	bro->COLOR=RED;
 				 	position=position->parent;
 				 }
-				 else if(bro->left->COLOR==BLACK) //bro->right->COLOR=RED; case 3
+				 else 
 				 {
-				 	bro->right->COLOR=BLACK;
-				 	bro->COLOR=RED;
-				 	left_rotate(bro);
-				 	bro=position->parent->left;
+					 if (bro->left->COLOR == BLACK) //bro->right->COLOR=RED; case 3
+					 {
+						 bro->right->COLOR = BLACK;
+						 bro->COLOR = RED;
+						 left_rotate(bro);
+						 bro = position->parent->left;
+					 }
+					 //bro->left->COLOR==RED,bro->right->COLOR=RED   case 4
+					 bro->COLOR = position->parent->COLOR;  //交换兄弟节点的颜色和其父节点的颜色，兄弟节点颜色肯定是黑色的
+					 position->parent->COLOR = BLACK;
+					 bro->left->COLOR = BLACK;
+					 right_rotate(position->parent);
+					 position = root;
 				 }
-				 //bro->left->COLOR==RED,bro->right->COLOR=RED   case 4
-				 bro->COLOR=position->parent->COLOR;  //交换兄弟节点的颜色和其父节点的颜色，兄弟节点颜色肯定是黑色的
-				 position->parent->COLOR=BLACK;
-				 bro->left->COLOR=BLACK;
-				 right_rotate(position->parent);
-				 position=root;
+				
 			}
 		}
 
@@ -681,7 +725,9 @@ namespace MyCppSTL
 			erase(it_pre);
 			it_pre = it++;	
 		}
-
+		//删除最后一个节点
+		erase(it_pre);
+	//	destory_node(nil);
 	}
 
 	template<typename T,typename alloc>
@@ -701,18 +747,178 @@ namespace MyCppSTL
 		tree_delete(position.getNode());  //
 	}
 
-	/*
+
+	
 	template<typename T,typename alloc>
-	inline RB_Tree<T, alloc>::size_type RB_Tree<T, alloc>::erase(const key_type&x)
+	inline typename RB_Tree<T, alloc>::size_type RB_Tree<T, alloc>::erase(const key_type&x)
 	{
-		
+		std::pair<iterator, iterator> _p = equal_range(x);
+		size_type n = 0;
+		n = distance(_p.first, _p.second);
+		erase(_p.first, _p.second);
+		return n;
 	}
-	*/
+
 	template<typename T,typename alloc>
 	inline void RB_Tree<T, alloc>::erase(iterator first, iterator last)
 	{
 		auto it = first;
 		while (it != last)erase(it++);
+	}
+
+	//寻找不小于_key的边界,第一个大于或等于key的迭代器指针
+	template<typename T,typename alloc>
+	typename RB_Tree<T, alloc>::const_iterator RB_Tree<T, alloc>::lower_bound(const key_type&_key) const
+	{
+		_NodePtr temp = root;
+		_NodePtr res = root;
+		while (temp != nil)
+		{
+			if (temp->value >= _key)
+			{
+				res = temp;
+				temp = temp->left;
+			}
+			else
+			{
+				temp = temp->right;
+			}
+		}
+		return const_iterator(res);
+	}
+
+	//寻找不大于_key的节点  第一个大于key的迭代器指针
+	template<typename T,typename alloc>
+	typename RB_Tree<T, alloc>::const_iterator RB_Tree<T, alloc>::upper_bound(const key_type&_key) const
+	{
+		_NodePtr temp = root;
+		_NodePtr res = root;
+		while (temp != nil)
+		{
+			if (temp->value > _key)
+			{
+				res = temp; temp = temp->left;
+			}
+			else
+			{
+				temp = temp->right;
+			}
+		}
+
+		return const_iterator(res);
+	}
+
+	template<typename T,typename alloc>
+	inline std::pair<typename RB_Tree<T,alloc>::const_iterator, typename RB_Tree<T, alloc>::const_iterator>
+		RB_Tree<T, alloc>::equal_range(const key_type&_key) const
+	{
+		return std::pair<const_iterator, const_iterator>(lower_bound(_key), upper_bound(_key));
+	}
+
+
+	//寻找不小于_key的边界,第一个大于或等于key的迭代器指针
+	template<typename T, typename alloc>
+	typename RB_Tree<T, alloc>::iterator RB_Tree<T, alloc>::lower_bound(const key_type&_key) 
+	{
+		_NodePtr temp = root;
+		_NodePtr res = root;
+		while (temp != nil)
+		{
+			if (temp->value >= _key)
+			{
+				res = temp;
+				temp = temp->left;
+			}
+			else
+			{
+				temp = temp->right;
+			}
+		}
+		return iterator(res);
+	}
+
+	//寻找不大于_key的节点  第一个大于key的迭代器指针
+	template<typename T, typename alloc>
+	typename RB_Tree<T, alloc>::iterator RB_Tree<T, alloc>::upper_bound(const key_type&_key)
+	{
+		_NodePtr temp = root;
+		_NodePtr res = root;
+		while (temp != nil)
+		{
+			if (temp->value > _key)
+			{
+				res = temp; temp = temp->left;
+			}
+			else
+			{
+				temp = temp->right;
+			}
+		}
+
+		return iterator(res);
+	}
+
+	template<typename T, typename alloc>
+	inline std::pair<typename RB_Tree<T, alloc>::iterator, typename RB_Tree<T, alloc>::iterator>
+		RB_Tree<T, alloc>::equal_range(const key_type&_key)
+	{
+		return std::pair<iterator,iterator>(lower_bound(_key), upper_bound(_key));	
+	}
+
+	template<typename T,typename alloc>
+	inline typename RB_Tree<T, alloc>::size_type RB_Tree<T, alloc>::distance(const_iterator first, const_iterator last) const
+	{
+		size_type count = 0;
+		while (first != last)
+		{
+			++count;
+			++first;
+		}
+
+		return count;
+	}
+
+
+	//非成员函数
+	template<typename T,typename alloc=MyCppSTL::allocator<T>>
+	bool operator==(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		if (lhs.size() == rhs.size())
+		{
+			return equal(lhs.begin(), lhs.end(), rhs.begin());
+		}
+
+		return false;
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	bool operator!=(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		return !(lhs == rhs);
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	bool operator<(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	bool operator>(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		return (rhs < lhs);
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	bool operator<=(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		return !(lhs>rhs);
+	}
+
+	template<typename T, typename alloc = MyCppSTL::allocator<T>>
+	bool operator>=(const RB_Tree<T, alloc>&lhs, const RB_Tree<T, alloc>&rhs)
+	{
+		return !(lhs<rhs);
 	}
 
 
