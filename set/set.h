@@ -15,6 +15,11 @@ namespace MyCppSTL
 	public:
 		using key_type = Key;
 		using value_type = Key;
+	public:
+		template<typename Key,typename alloc>
+		friend bool operator==(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs);
+		template<typename Key,typename alloc>
+		friend bool operator<(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs);
 	private:
 		using rep_type = MyCppSTL::RB_Tree<Key>;
 		rep_type t;//red-black tree representing set
@@ -73,8 +78,84 @@ namespace MyCppSTL
 			t.erase((rep_iterator&)position);
 		}
 
-		
+		size_type erase(const key_type&value)
+		{
+			return t.erase(value);
+		}
+
+		void erase(iterator first, iterator last)
+		{
+			using rep_iterator = typename rep_type::iterator;
+			t.erase((rep_iterator&)first, (rep_iterator&)last);
+		}
+
+		void clear() { t.clear(); }
+
+		iterator find(const key_type&_key) const
+		{
+			return t.find(_key);
+		}
+		size_type count(const key_type&_key) const
+		{
+			return t.find(_key) == end() ? 0 : 1;
+		}
+
+		iterator lower_bound(const key_type&_key) const
+		{
+			return t.lower_bound(_key);
+		}
+
+		iterator upper_bound(const key_type&_key)const
+		{
+			return t.upper_bound(_key);
+		}
+
+		std::pair<iterator, iterator> equal_range(const key_type&_key) const
+		{
+			return std::pair<iterator, iterator>(lower_bound(_key), upper_bound(_key));
+		}
+
+		//
+
+
 	};//end of set
+
+	//Âß¼­²Ù×÷
+	template<typename Key,typename alloc=MyCppSTL::allocator<Key>>
+	bool operator==(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return (lhs.t == rhs.t);
+	}
+
+	template<typename Key, typename alloc = MyCppSTL::allocator<Key>>
+	bool operator!=(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return !(lhs==rhs);
+	}
+
+	template<typename Key, typename alloc = MyCppSTL::allocator<Key>>
+	bool operator<(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return (lhs.t < rhs.t);
+	}
+
+	template<typename Key, typename alloc = MyCppSTL::allocator<Key>>
+	bool operator>(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return (lhs.t > rhs.t);
+	}
+
+	template<typename Key, typename alloc = MyCppSTL::allocator<Key>>
+	bool operator<=(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return (lhs.t <= rhs.t);
+	}
+
+	template<typename Key, typename alloc = MyCppSTL::allocator<Key>>
+	bool operator>=(const set<Key, alloc>&lhs, const set<Key, alloc>&rhs)
+	{
+		return (lhs.t >= rhs.t);
+	}
 
 }
 
