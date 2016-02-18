@@ -475,6 +475,54 @@ namespace MyCppSTL
 			MyCppSTL::pop_heap(first, last--);
 		}
 	}
+
+	//search
+	template< class ForwardIt1, class ForwardIt2 >
+    ForwardIt1 search(ForwardIt1 first, ForwardIt1 last,ForwardIt2 s_first, ForwardIt2 s_last)
+    {
+    	for(;;++first)
+    	{
+    		ForwardIt1 it=first;
+    		for(ForwardIt2 s_it=s_first;;++s_it,++it)
+    		{
+    			if(s_it==s_last)return first;   //If [s_first, s_last) is empty, first is returned.//or find
+    			if(it==last)return last;   //If no such subsequence is found, last is returned.
+    			if(!(*s_it==*it))break;
+    		} 
+    	}
+    }
+
+	/*
+	template<typename InputIt>
+	typename MyCppSTL::iterator_traits<InputIt>::difference_type distance()
+	distacne 函数在iterator头文件中
+	*/
+
+	//要求是需要排好序
+	template<typename ForwardIt,typename T>
+	ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T&value)
+	{
+		typename MyCppSTL::iterator_traits<ForwardIt>::difference_type count, step;
+		ForwardIt it;
+		count = MyCppSTL::distance(first, last);
+		while (count > 0)
+		{
+			it = first;
+			step = count / 2;
+			MyCppSTL::advance(it, step);
+			if (*it < value)
+			{
+				first = ++it;
+				count -= step + 1;
+			}
+			else
+			{
+				count = step;
+			}
+		}
+
+		return first;
+	}
 }
 
 
