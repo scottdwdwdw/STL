@@ -317,7 +317,7 @@ namespace MyCppSTL{
 			insert_aux(pos, first, last, std::is_integral<InputIt>::type());
 		}
 
-		
+	   
 		template<class T>
 		void insert(iterator pos, size_type count, const T& value)//接受迭代器指定的范围,要与接受两个整数的区别
 		{
@@ -400,10 +400,12 @@ namespace MyCppSTL{
 		    }
 		   else  //空间不够
 		   {
+			   auto distance = pos - begin();
 			   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
 			   reserve(new_size);
 			   auto new_pos = _first + distance;//恢复位置
-			   insert(new_pos, count, value);  //递归调用
+			 //  auto it = iterator(new_pos);
+			   insert(new_pos, count, value);  //递归调用,更改
 		   }
 	   }
 	   //insert的辅助函数，是迭代器
