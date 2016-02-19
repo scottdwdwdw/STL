@@ -321,7 +321,8 @@ namespace MyCppSTL{
 		template<class T>
 		void insert(iterator pos, size_type count, const T& value)//接受迭代器指定的范围,要与接受两个整数的区别
 		{
-			insert_aux(pos, count, value, std::is_integral<T>::type());
+			//insert_aux(pos, count, value, std::is_integral<T>::type());
+			insert_aux(pos, count, value, std::true_type());
 		}
 		
 
@@ -387,7 +388,7 @@ namespace MyCppSTL{
 		   {
 			   throw std::out_of_range("out of range");
 		   }
-		   if ((size() + count) <= capacity())
+		   if ((size() + count) <= capacity())   //有bug
 		   {
 			   pointer _pos = _first + (pos-begin());      //这种做法？？？？
 			   auto last = uninitialized_fill_n(_last, count, *(_last - 1));//先构造出count个空间
@@ -401,7 +402,8 @@ namespace MyCppSTL{
 		   else  //空间不够
 		   {
 			   auto distance = pos - begin();
-			   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
+			   //const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
+			   const size_type new_size = ((capacity() == 0) ? 1 : (2 * (capacity() + count))); //按照capacity()来使用
 			   reserve(new_size);
 			   auto new_pos = _first + distance;//恢复位置
 			 //  auto it = iterator(new_pos);
@@ -417,6 +419,7 @@ namespace MyCppSTL{
 			   throw std::out_of_range("out of range");
 		   }
 		   difference_type count = last - first;//要插入元素的数量
+		   //或则在这里判断，size()是否为0，(size_type)count + size()) <= capacity()，如果都满足，则异常退出
 		   if (((size_type)count + size()) <= capacity())//有空间，插入
 		   {
 			   pointer _pos = _first + (pos - begin());      //这种做法？？？？
@@ -431,7 +434,8 @@ namespace MyCppSTL{
 		   else//空间不够
 		   {
 			   auto distance = pos - begin();
-			   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
+			//   const size_type new_size = ((size() == 0) ? 1 : (2 * (size() + count)));  //按照两倍的关系分配
+			   const size_type new_size = ((capacity() == 0) ? 1 : (2 * (capacity() + count))); //按照capacity()来使用
 			   reserve(new_size);
 			   auto new_pos = _first + distance;//恢复位置
 			   insert(new_pos, first, last);  //递归调用
