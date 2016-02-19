@@ -38,6 +38,12 @@ namespace MyCppSTL
 		}
 	};
 
+	template<typename T>
+	struct equal_to :public binary_function<T, T, bool>
+	{
+		bool operator()(const T&x, const T&y) { return x == y; }
+	};
+
 }   // end of namespace
 
 
