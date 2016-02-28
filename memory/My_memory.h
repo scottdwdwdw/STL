@@ -1,6 +1,9 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
+#include<assert.h>
+#include<utility>
+
 namespace MyCppSTL
 {
 
@@ -37,7 +40,7 @@ namespace MyCppSTL
 		//成员
 		virtual void dispose(){ delete _ptr;}
 		virtual void destory() { delete this; }
-		virtual shared_count_ptr() {}
+		virtual ~shared_count_ptr() {}
 	};
 
 	template<typename T,typename Deleter>
@@ -72,17 +75,20 @@ namespace MyCppSTL
 		template<typename Tp=T,typename Deleter>
 		shared_count(Tp*p, Deleter d) : _count_ptr(0)
 		{
-			p = new shared_count_deleter<Tp, Deleter>(p, d);
+			_count_ptr = new shared_count_deleter<Tp, Deleter>(p, d);
 		}
 
 		~shared_count()
 		{
-			if (_count_ptr->use_count() != 0)
+			if (_count_ptr != NULL)
 			{
-				_count_ptr->decr_ref_count();
+				if (_count_ptr->use_count() != 1)
+				{
+					_count_ptr->decr_ref_count();
+				}
+				else
+					_count_ptr->dispose();
 			}
-			else
-				_count_ptr->dispose();
 		}
 
 		shared_count(shared_count&rhs) :_count_ptr(rhs._count_ptr)  //copy construct
@@ -110,11 +116,11 @@ namespace MyCppSTL
 			_count_ptr = temp;
 		}
 
-		long use_count()
+		long use_count() const
 		{
 			return _count_ptr == NULL ? 0 : _count_ptr->use_count();
 		}
-		bool unique()
+		bool unique() const
 		{
 			return this->use_count == 0;
 		}
@@ -141,6 +147,18 @@ namespace MyCppSTL
 		shared_ptr(T* p) : _Ptr(p), count(p) {}
 		template<typename _Tp=T,typename Deleter>   //接受一个删除函数
 		shared_ptr(_Tp* p, Deleter d) : _Ptr(p), count(p, d) {}
+		shared_ptr(shared_ptr&& rhs) :_Ptr(rhs._Ptr), count()
+		{
+			count.swap(rhs.count);
+			rhs._Ptr = NULL;
+		}
+		shared_ptr(shared_ptr&rhs) = default;
+		~shared_ptr() = default;
+		shared_ptr&operator=(shared_ptr&&rhs)
+		{
+			shared_ptr(std::move(rhs)).swap(*this); //采用移动赋值后，右边的值会处于不确定状态
+			return *this;
+		}
 		shared_ptr&operator=(shared_ptr&rhs)
 		{
 			_Ptr = rhs._Ptr;
@@ -148,13 +166,104 @@ namespace MyCppSTL
 			return *this;
 		}
 
+		void reset()
+		{
+			shared_ptr().swap(*this);
+		}
+
+		reference operator*() const 
+		{
+			assert(_Ptr != NULL);
+			return *_Ptr;
+		}
+
+		pointer operator->() const
+		{
+			assert(_Ptr != NULL);
+			return &(operator*());
+		}
+
+		pointer get() const 
+		{
+			return _Ptr;
+		}
+
+		explicit operator bool() const
+		{
+			return _Ptr == NULL ? false : true;
+		}
+
+		bool unique() const
+		{
+			return count.unique();
+		}
+
+		long use_count() const
+		{
+			return count.use_count();
+		}
+
+
+		template<typename Tp1>
+		void reset(Tp1*p)  //Tp1要与T类型兼容
+		{
+			shared_ptr(p).swap(*this);
+		}
+
 		void swap(shared_ptr<T>&rhs)
 		{
 			std::swap(_Ptr, rhs._Ptr);
-			rhs.swap(count);
+			count.swap(rhs.count);
 		}
 
 	};
+
+	//逻辑操作
+	template<typename T>
+	bool operator==(shared_ptr<T>&lhs, shared_ptr<T>&rhs)
+	{
+		return lhs.get() == rhs.get();
+	}
+
+	template<typename T>
+	bool operator!=(shared_ptr<T>&lhs,shared_ptr<T>&rhs)
+	{
+		return !(lhs == rhs);
+	}
+
+	template<typename T>
+	bool operator<(shared_ptr<T>&lhs,shared_ptr<T>&rhs)
+	{
+		return lhs.get()<rhs.get();
+	}
+	template<typename T>
+	bool operator>(shared_ptr<T>&lhs,shared_ptr<T>&rhs)
+	{
+		return rhs<lhs;
+	}
+	template<typename T>
+	bool operator>=(shared_ptr<T>&lhs,shared_ptr<T>&rhs)
+	{
+		return !(lhs < rhs);
+	}
+
+	template<typename T>
+	bool operator<=(shared_ptr<T>&lhs,shared_ptr<T>&rhs)
+	{
+		return !(lhs > rhs);
+	}
+
+	template<typename T>
+	void swap(shared_ptr<T>&lhs, shared_ptr<T>&rhs)
+	{
+		lhs.swap(rhs);
+	}
+
+	template<typename T,typename ...T2>
+	shared_ptr<T> make_shared(T2...args)
+	{
+		return shared_ptr<T>(::new T(std::forward<T2>(args)...));
+	}
 
 
 }
