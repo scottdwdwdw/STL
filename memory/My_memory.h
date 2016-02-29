@@ -266,6 +266,151 @@ namespace MyCppSTL
 	}
 
 
+
+	//unqiue_ptr
+	template<typename Ty>
+	struct default_deleter
+	{
+		void operator()(Ty* ptr)
+		{
+			//assert(ptr != NULL);
+			if(ptr!=NULL)delete ptr;
+		}
+	};
+
+	//特例化
+	template<typename Ty>
+	struct default_deleter<Ty[]>
+	{
+		void operator()(Ty*ptr)
+		{
+			//assert(ptr != NULL);
+			if(ptr!=NULL)delete[]ptr;
+		}
+	};
+
+	//unique_ptr
+	template<typename Ty,typename Deleter=default_deleter<Ty>>
+	class unique_ptr
+	{
+	public://内嵌型别
+		using value_type = Ty;
+		using reference = Ty&;
+		using const_reference = const Ty&;
+		using pointer = Ty*;
+		using const_pointer = const Ty*;
+		using size_type = std::size_t;
+	private://内置数据
+		Ty* _Ptr;
+		Deleter Del;
+	public:
+		//构造函数
+		unique_ptr() :_Ptr(NULL), Del(Deleter()) {}
+		unique_ptr(pointer p) :_Ptr(p), Del(Deleter()) {}
+		unique_ptr(pointer p, Deleter&&d) :_Ptr(p), Del(std::move(d)) {}
+		unique_ptr(unique_ptr&&rhs):_Ptr(std::move(rhs._Ptr)),Del(std::move(rhs.Del))
+		{
+			rhs._Ptr = NULL;
+		}
+		unique_ptr&operator=(unique_ptr&&rhs)
+		{
+			_Ptr = std::move(rhs._Ptr);
+			Del = std::move(rhs.Del);
+			rhs._Ptr = NULL;
+		}
+		
+		~unique_ptr()
+		{
+			Del(_Ptr);
+		}
+
+		unique_ptr(unique_ptr&rhs) = delete;
+		unique_ptr&operator=(unique_ptr&rhs) = delete;
+		reference operator*() const
+		{
+			return *_Ptr;
+		}
+		reference operator*()
+		{
+			assert(_Ptr != NULL);
+			return *_Ptr;
+		}
+
+		pointer operator->() const
+		{
+			return &(operator*());
+		}
+
+		pointer get() const
+		{
+			return _Ptr;
+		}
+
+		pointer release()
+		{
+			pointer temp = _Ptr;
+			_Ptr = NULL;
+			return temp;
+		}
+
+		void reset(pointer p = NULL)
+		{
+			pointer temp = _Ptr;
+			_Ptr = p;
+			if (temp)Del(temp);
+		}
+
+		void swap(unique_ptr&rhs)
+		{
+			std::swap(_Ptr, rhs._Ptr);
+			std::swap(Del, rhs.Del);
+		}
+	};
+
+
+	//逻辑操作
+	template<typename Ty>
+	bool operator==(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return (rhs.get() == lhs.get());
+	}
+
+	template<typename Ty>
+	bool operator!=(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return !(rhs == lhs);
+	}
+
+	template<typename Ty>
+	bool operator<(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return (rhs.get() < lhs.get());
+	}
+
+	template<typename Ty>
+	bool operator>(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return (lhs < rhs);
+	}
+
+	template<typename Ty>
+	bool operator<=(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return !(rhs > rhs);
+	}
+
+	template<typename Ty>
+	bool operator>=(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		return !(rhs<lhs);
+	}
+
+	template<typename Ty>
+	void swap(unique_ptr<Ty>&rhs, unique_ptr<Ty>&lhs)
+	{
+		rhs.swap(lhs);
+	}
+
 }
 
 #endif // !_MEMORY_H
